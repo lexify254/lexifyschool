@@ -1,0 +1,33 @@
+{
+  "routes": [
+    { "path": "/", "title": "Lexify School" },
+    { "path": "/about", "title": "About Lexify School" },
+    { "path": "/academy", "title": "Computer Packages Academy" },
+    { "path": "/academy/:slug", "title": "Academy Course" },
+    { "path": "/admin", "title": "Admin" },
+    { "path": "/admin/curriculum", "title": "Curriculum Manager" },
+    { "path": "/child-safety", "title": "Child Safety" },
+    { "path": "/contact", "title": "Contact" },
+    { "path": "/curriculum", "title": "Curriculum Guide" },
+    { "path": "/guest/dashboard", "title": "Guest Dashboard" },
+    { "path": "/guest/:section", "title": "Guest Portal" },
+    { "path": "/how-it-works", "title": "How It Works" },
+    { "path": "/login", "title": "Log In" },
+    { "path": "/parent/dashboard", "title": "Parent Dashboard" },
+    { "path": "/parent/:section", "title": "Parent Portal" },
+    { "path": "/password/reset", "title": "Reset Password" },
+    { "path": "/password/update", "title": "Update Password" },
+    { "path": "/privacy", "title": "Privacy" },
+    { "path": "/projects", "title": "Projects Store" },
+    { "path": "/projects/:slug", "title": "Project Details" },
+    { "path": "/signup", "title": "Create an Account" },
+    { "path": "/signup/:role", "title": "Create a Role Account" },
+    { "path": "/student/dashboard", "title": "Student Dashboard" },
+    { "path": "/student/:section", "title": "Student Portal" },
+    { "path": "/teacher/dashboard", "title": "Teacher Dashboard" },
+    { "path": "/teacher/:section", "title": "Teacher Portal" },
+    { "path": "/teachers", "title": "Browse Teachers" },
+    { "path": "/teachers/:id", "title": "Teacher Profile" },
+    { "path": "/terms", "title": "Terms" }
+  ]
+}

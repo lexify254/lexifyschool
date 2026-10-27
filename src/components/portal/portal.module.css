@@ -1,0 +1,46 @@
+.identity { display: grid; gap: 3px; margin: 20px 4px 2px; padding-top: 13px; border-top: 1px solid var(--line); }
+.identity span, .identity strong { font-size: 12px; }
+.identity span, .muted { color: var(--muted); }
+.identity strong { color: var(--navy); overflow-wrap: anywhere; }
+.dashboardGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 18px 0; }
+.panelHeading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.panelHeading a { color: var(--blue); font-size: 13px; font-weight: 750; }
+.recordList { display: grid; gap: 9px; padding: 0; margin: 0; list-style: none; }
+.record { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 13px 14px; border: 1px solid var(--line); border-radius: 13px; background: #fbfdff; }
+.recordBody { display: grid; gap: 3px; min-width: 0; }
+.recordBody strong { color: var(--navy); font-size: 14px; line-height: 1.35; }
+.recordBody strong a { color: var(--blue); text-decoration: underline; text-underline-offset: 2px; }
+.recordBody > span { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.recordBody small { color: #6c7f97; font-size: 11px; line-height: 1.4; }
+.status { flex: 0 0 auto; padding: 3px 8px; border-radius: 999px; color: #526782; background: #edf2f8; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+.statusGood { color: #17623c; background: #e5f6ec; }
+.statusWarn { color: #8c5412; background: #fff2d4; }
+.strength { display: grid; gap: 9px; margin: 0 0 16px; }
+.strength > div { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 12px; background: var(--surface); }
+.strength dt { color: var(--muted); font-size: 12px; }
+.strength dd { margin: 0; color: var(--navy); font-size: 13px; font-weight: 800; text-align: right; }
+.scoreList { display: grid; gap: 11px; padding: 0; margin: 0; list-style: none; }
+.scoreList li { display: grid; grid-template-columns: minmax(100px, 1fr) minmax(90px, 1.4fr) auto; gap: 5px 12px; align-items: center; }
+.scoreList strong { color: var(--navy); font-size: 12px; }
+.scoreList span { color: var(--blue); font-size: 12px; font-weight: 750; }
+.scoreList small { grid-column: 1 / -1; color: var(--muted); font-size: 11px; }
+.bar { grid-column: 2; grid-row: 1; height: 7px; overflow: hidden; border-radius: 999px; background: #e6edf5; }
+.bar > i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #1976d2, #18a46b); }
+.goalList { display: grid; gap: 9px; padding-left: 20px; color: var(--ink); }
+.upcomingList { display: grid; gap: 9px; padding: 0; margin: 0; list-style: none; }
+.childGrid { display: grid; gap: 16px; margin: 18px 0; }
+.childCard { display: grid; gap: 12px; }
+.childCard h3 { margin: 8px 0; color: var(--navy); font-size: 15px; }
+.childColumns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.childColumns > div { padding: 12px; border: 1px solid var(--line); border-radius: 13px; }
+.childColumns ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: 13px; }
+.childColumns p { margin: 0; }
+.note { padding: 13px 16px; margin-bottom: 16px; border: 1px solid #cfdef0; border-radius: 13px; background: #eef5ff; color: var(--muted); font-size: 13px; }
+.actionPanel { margin-top: 18px; }
+.actionPanel h2 { margin: 0 0 7px; color: var(--navy); font-size: 18px; }
+.actionPanel p { margin: 0 0 12px; color: var(--muted); }
+.disabledAction { display: inline-flex; align-items: center; min-height: 38px; padding: 7px 12px; border: 1px dashed #9baec5; border-radius: 10px; color: #596b81; background: #f6f8fb; font-size: 12px; font-weight: 700; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.statNote { display: block; margin-top: 8px; color: var(--muted); font-size: 11px; line-height: 1.4; }
+@media (max-width: 860px) { .dashboardGrid, .childColumns { grid-template-columns: 1fr; } }
+@media (max-width: 760px) { .scoreList li { grid-template-columns: 1fr auto; } .scoreList .bar { grid-column: 1 / -1; grid-row: auto; } .strength > div { display: grid; } .strength dd { text-align: left; } }
