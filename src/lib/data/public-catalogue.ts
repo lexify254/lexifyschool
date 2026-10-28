@@ -8,7 +8,7 @@ export type TeacherFilters = {
   gradeId?: string;
   verified?: boolean;
   maxPrice?: number;
-  paymentBasis?: string;
+  pricingBasis?: string;
 };
 
 function cleanSearch(value: string): string {
@@ -24,17 +24,17 @@ export async function listTeachers(filters: TeacherFilters = {}): Promise<Row[]>
   if (!supabase) return [];
 
   let eligibleTeacherIds: string[] | null = null;
-  if (filters.subjectId || filters.gradeId || filters.maxPrice || filters.paymentBasis) {
+  if (filters.subjectId || filters.gradeId || filters.maxPrice || filters.pricingBasis) {
     let classQuery = supabase
       .from("public_class_listings")
-      .select("teacher_id,grade_id,learning_area_id,price_kes,payment_basis")
+      .select("teacher_id,grade_id,learning_area_id,price_kes,pricing_basis")
       .eq("is_published", true)
       .eq("is_active", true)
       .limit(500);
     if (filters.gradeId) classQuery = classQuery.eq("grade_id", filters.gradeId);
     if (filters.subjectId) classQuery = classQuery.eq("learning_area_id", filters.subjectId);
     if (filters.maxPrice) classQuery = classQuery.lte("price_kes", filters.maxPrice);
-    if (filters.paymentBasis) classQuery = classQuery.eq("payment_basis", filters.paymentBasis);
+    if (filters.pricingBasis) classQuery = classQuery.eq("pricing_basis", filters.pricingBasis);
     const { data: classes, error: classError } = await classQuery;
     reportReadError("class filter", classError);
     eligibleTeacherIds = [...new Set((classes ?? []).map((row) => row.teacher_id as string).filter(Boolean))];
@@ -78,7 +78,7 @@ export async function getTeacherProfile(id: string): Promise<{ teacher: Row; sub
   const [areasResult, gradesResult, classesResult] = await Promise.all([
     subjectIds.length ? supabase.from("learning_areas").select("id,title,description,icon_name,accent_color,illustration_url").in("id", subjectIds) : Promise.resolve({ data: [], error: null }),
     gradeIds.length ? supabase.from("grades").select("id,name,code").in("id", gradeIds) : Promise.resolve({ data: [], error: null }),
-    supabase.from("public_class_listings").select("id,title,description,grade_id,learning_area_id,payment_basis,price_kes,lessons_in_bundle,capacity").eq("teacher_id", id).eq("is_published", true).eq("is_active", true).limit(40),
+    supabase.from("public_class_listings").select("id,title,description,grade_id,learning_area_id,pricing_basis,price_kes,lessons_in_bundle,capacity").eq("teacher_id", id).eq("is_published", true).eq("is_active", true).limit(40),
   ]);
   reportReadError("teacher learning areas", areasResult.error);
   reportReadError("teacher grades", gradesResult.error);

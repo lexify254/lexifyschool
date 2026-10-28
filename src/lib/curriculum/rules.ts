@@ -10,9 +10,12 @@ export interface CurriculumSubject {
   title?: string;
   label?: string;
   code?: string;
+  kcseCode?: string;
   curriculumArea?: string;
   area?: string;
   kind?: string;
+  parentAreaId?: SubjectId;
+  isAreaContainer?: boolean;
   group?: KcseGroup | string;
   groups?: readonly (KcseGroup | string)[];
   pathway?: SeniorPathway | string;
@@ -148,6 +151,23 @@ const DEFAULT_OVERLAPS: readonly (readonly SubjectMatcher[])[] = [
 ];
 const DEFAULT_GROUP_I: readonly SubjectMatcher[] = ["English", "Kiswahili", "Mathematics"];
 const GROUPS: readonly KcseGroup[] = ["I", "II", "III", "IV", "V"];
+export type CurriculumSystemKind = "junior" | "senior" | "kcse" | "unknown";
+
+/** Identify a curriculum family from live system and grade labels, not exact seed codes. */
+export function classifyCurriculumSystem(
+  system: { code?: unknown; name?: unknown },
+  grade?: { code?: unknown; name?: unknown },
+): CurriculumSystemKind {
+  const systemLabel = normalize(`${String(system.code ?? "")} ${String(system.name ?? "")}`);
+  const gradeLabel = normalize(`${String(grade?.code ?? "")} ${String(grade?.name ?? "")}`);
+  const combined = `${systemLabel}-${gradeLabel}`;
+  if (systemLabel.includes("senior") || /(?:^|-)grade-?(?:10|11|12)(?:-|$)/.test(gradeLabel)) return "senior";
+  if (systemLabel.includes("junior") || /(?:^|-)grade-?(?:7|8|9)(?:-|$)/.test(gradeLabel)) return "junior";
+  if (/8-?4-?4|kcse|844/.test(systemLabel) ||
+      (systemLabel.includes("secondary") && /form-?[34]|f[34]/.test(gradeLabel)) ||
+      (/form-?[34]|f[34]/.test(combined) && /secondary|kcse|844|8-4-4/.test(combined))) return "kcse";
+  return "unknown";
+}
 
 const normalize = (value: unknown): string => String(value ?? "")
   .normalize("NFKD")
@@ -159,7 +179,7 @@ const normalize = (value: unknown): string => String(value ?? "")
 const idKey = (id: SubjectId): string => String(id);
 const subjectName = (subject: CurriculumSubject): string => subject.name ?? subject.title ?? subject.label ?? idKey(subject.id);
 const fieldsOf = (subject: CurriculumSubject): string[] => [
-  idKey(subject.id), subject.code, subject.name, subject.title, subject.label,
+  idKey(subject.id), subject.code, subject.kcseCode, subject.name, subject.title, subject.label,
   subject.curriculumArea, subject.area, subject.kind,
 ].filter((value): value is string => typeof value === "string").map(normalize);
 
@@ -305,13 +325,19 @@ export function validateJuniorSelection(input: JuniorValidationInput): JuniorVal
 
   const optionalTutoringSubjects = selected.filter((subject) => isJuniorOptional(subject, config));
   const selectedCore = selected.filter((subject) => !optionalTutoringSubjects.includes(subject));
-  for (const subject of selectedCore) {
+  // If a selected required parent is only a category container and a specific linked
+  // sub-area was selected, validate the sub-area in that slot. Callers may still persist
+  // the required parent link alongside it when the database RPC requires that relationship.
+  const selectedWithChildren = selectedCore.filter((subject) =>
+    !(subject.isAreaContainer && selectedCore.some((candidate) => String(candidate.parentAreaId ?? "") === idKey(subject.id))),
+  );
+  for (const subject of selectedWithChildren) {
     const area = normalizedArea(subject, config);
     if (!keys.includes(area)) pushError(errors, "subject-not-in-junior-curriculum", `${subjectName(subject)} is not one of the rationalised core areas or configured tutoring extras.`, [subject]);
   }
   const coreSubjects: CurriculumSubject[] = [];
   for (const key of keys) {
-    const inArea = selectedCore.filter((subject) => normalizedArea(subject, config) === key);
+    const inArea = selectedWithChildren.filter((subject) => normalizedArea(subject, config) === key);
     if (inArea.length === 0) {
       const special = key === religionKey ? ["religious-education-required", "Choose one Religious Education option (CRE, IRE, or HRE)."]
         : key === languageKey ? ["language-choice-required", "Choose Kiswahili or Kenya Sign Language for the language learning area."]
@@ -323,11 +349,11 @@ export function validateJuniorSelection(input: JuniorValidationInput): JuniorVal
     coreSubjects.push(...inArea.slice(0, 1));
   }
   // The selectors must represent precisely one option in each of these slots, even with custom area keys.
-  const reChoices = selectedCore.filter((subject) => isReligiousEducation(subject));
+  const reChoices = selectedWithChildren.filter((subject) => isReligiousEducation(subject));
   if (reChoices.length > 1 && !errors.some((error) => error.code === "multiple-subjects-in-core-area" && error.details?.area === religionKey)) {
     pushError(errors, "religious-education-count", "Choose exactly one Religious Education subject.", reChoices, { count: reChoices.length });
   }
-  const languageChoices = selectedCore.filter((subject) => isKiswahili(subject) || isSignLanguage(subject));
+  const languageChoices = selectedWithChildren.filter((subject) => isKiswahili(subject) || isSignLanguage(subject));
   if (languageChoices.length > 1 && !errors.some((error) => error.code === "multiple-subjects-in-core-area" && error.details?.area === languageKey)) {
     pushError(errors, "language-choice-count", "Choose exactly one language option: Kiswahili or Kenya Sign Language.", languageChoices, { count: languageChoices.length });
   }
@@ -428,7 +454,14 @@ export function validateSeniorSelection(input: SeniorValidationInput): SeniorVal
 
 function kcseGroups(subject: CurriculumSubject): KcseGroup[] {
   const raw = [...(subject.groups ?? []), ...(subject.group ? [subject.group] : [])].map((value) => normalize(value));
-  const groups = raw.map((value) => value.toUpperCase()).filter((value): value is KcseGroup => GROUPS.includes(value as KcseGroup));
+  const groupAliases: Record<KcseGroup, readonly string[]> = {
+    I: ["i", "1", "group-i", "group-1", "groupi", "group1"],
+    II: ["ii", "2", "group-ii", "group-2", "groupii", "group2"],
+    III: ["iii", "3", "group-iii", "group-3", "groupiii", "group3"],
+    IV: ["iv", "4", "group-iv", "group-4", "groupiv", "group4"],
+    V: ["v", "5", "group-v", "group-5", "groupv", "group5"],
+  };
+  const groups = GROUPS.filter((group) => raw.some((value) => groupAliases[group].includes(value)));
   if (groups.length) return [...new Set(groups)];
   const text = fieldsOf(subject).join("-");
   const aliases: Record<KcseGroup, readonly string[]> = {

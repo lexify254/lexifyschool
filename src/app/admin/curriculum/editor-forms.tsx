@@ -64,12 +64,14 @@ export function LearningAreaEditor({
   iconName,
   accentColor,
   description,
+  isActive,
 }: {
   id: string;
   title: string;
   iconName: string;
   accentColor: string;
   description: string;
+  isActive: boolean;
 }) {
   const [state, formAction, pending] = useActionState(saveLearningArea, initialState);
   return (
@@ -79,6 +81,7 @@ export function LearningAreaEditor({
       <div className="admin-field"><label htmlFor={`area-icon-${id}`}>Icon name</label><input id={`area-icon-${id}`} name="icon_name" defaultValue={iconName} maxLength={40} required /></div>
       <div className="admin-field"><label htmlFor={`area-color-${id}`}>Accent color</label><input id={`area-color-${id}`} name="accent_color" type="color" defaultValue={/^#[0-9a-fA-F]{6}$/.test(accentColor) ? accentColor : "#2563eb"} required /><small>{accentColor}</small></div>
       <div className="admin-field"><label htmlFor={`area-description-${id}`}>Illustration description</label><textarea id={`area-description-${id}`} name="description" defaultValue={description} maxLength={500} /></div>
+      <label className="admin-check"><input type="checkbox" name="is_active" defaultChecked={isActive} /> Active</label>
       <button className="admin-submit" type="submit" disabled={pending}>{pending ? "Saving…" : "Save area"}</button>
       <Feedback state={state} />
     </form>

@@ -2,6 +2,7 @@
 
 import { createBrowserClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getBrowserSupabaseCookieOptions } from "@/lib/supabase/cookies";
 
 let client: SupabaseClient | null = null;
 
@@ -11,7 +12,7 @@ export function getSupabaseBrowserClient(): SupabaseClient | null {
   if (!url || !key) return null;
   if (!client) {
     client = createBrowserClient(url, key, {
-      cookieOptions: { sameSite: "none", secure: true },
+      cookieOptions: getBrowserSupabaseCookieOptions(),
     });
   }
   return client;

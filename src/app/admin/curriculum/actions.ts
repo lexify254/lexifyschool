@@ -86,6 +86,7 @@ export async function saveLearningArea(_previous: SaveState, formData: FormData)
   const iconName = value(formData, "icon_name", 40);
   const accentColor = value(formData, "accent_color", 7);
   const description = value(formData, "description", 500);
+  const isActive = active(formData);
   if (!isUuid(id)) return failed("This learning area could not be identified. Reload and try again.");
   if (!title || title.length < 1) return failed("Enter a learning-area title (up to 100 characters).");
   if (!iconName || !/^[A-Za-z][A-Za-z0-9]{0,39}$/.test(iconName)) {
@@ -93,12 +94,13 @@ export async function saveLearningArea(_previous: SaveState, formData: FormData)
   }
   if (!accentColor || !/^#[0-9a-fA-F]{6}$/.test(accentColor)) return failed("Enter a six-digit hex accent color, such as #2563EB.");
   if (description === null) return failed("Illustration description must be 500 characters or fewer.");
+  if (isActive === null) return failed("The active-status value is invalid. Reload and try again.");
 
   const supabase = await getSupabaseServerClient();
   if (!supabase) return failed("Saving is unavailable because the database connection is not configured.");
   const { data, error } = await supabase
     .from("learning_areas")
-    .update({ title, icon_name: iconName, accent_color: accentColor, description: description || null })
+    .update({ title, icon_name: iconName, accent_color: accentColor, description: description || null, is_active: isActive })
     .eq("id", id)
     .select("id")
     .maybeSingle();

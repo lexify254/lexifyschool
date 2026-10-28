@@ -26,7 +26,7 @@ export default async function AdminCurriculumPage() {
     ? await Promise.all([
         supabase.from("education_systems").select("id,code,name,is_active,starts_on,ends_on").order("name"),
         supabase.from("grades").select("id,system_id,code,name,level_order,is_active,starts_on,ends_on").order("level_order"),
-        supabase.from("learning_areas").select("id,system_id,title,description,icon_name,accent_color,sort_order").order("sort_order"),
+        supabase.from("learning_areas").select("id,system_id,title,description,icon_name,accent_color,sort_order,is_active").order("sort_order"),
       ])
     : [null, null, null];
   const hasConnection = !!supabase;
@@ -40,7 +40,7 @@ export default async function AdminCurriculumPage() {
   return (
     <div className="admin-page">
       <header className="admin-heading">
-        <div><span className="admin-kicker">Catalogue configuration</span><h1>Curriculum manager</h1><p>Maintain system and grade availability dates and refine learning-area presentation.</p></div>
+        <div><span className="admin-kicker">Catalogue configuration</span><h1>Curriculum manager</h1><p>Maintain system and grade availability dates and refine learning-area presentation. Course content and account controls are available from the admin navigation.</p></div>
       </header>
       <aside className="admin-warning"><strong>Official curriculum verification required</strong>Seed curriculum assumptions and mappings are provisional. Verify all systems, grades, learning areas, codes, and dates against current official KICD/KNEC guidance before relying on or publishing them.</aside>
 
@@ -75,7 +75,7 @@ export default async function AdminCurriculumPage() {
                 const color = text(area, "accent_color", "#2563EB");
                 return <article className="admin-record" key={areaId}>
                   <div className="admin-record__head"><div><h3><i className="admin-color-swatch" style={{ backgroundColor: /^#[0-9a-fA-F]{6}$/.test(color) ? color : "#2563eb" }} aria-hidden="true" />{text(area, "title", "Untitled learning area")}</h3><p>Icon: {text(area, "icon_name", "BookOpen")}</p></div></div>
-                  <div className="admin-record__body"><LearningAreaEditor id={areaId} title={text(area, "title")} iconName={text(area, "icon_name", "BookOpen")} accentColor={color} description={text(area, "description")} /></div>
+                  <div className="admin-record__body"><LearningAreaEditor id={areaId} title={text(area, "title")} iconName={text(area, "icon_name", "BookOpen")} accentColor={color} description={text(area, "description")} isActive={asActive(area)} /></div>
                 </article>;
               })}
             </div>

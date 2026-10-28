@@ -1,11 +1,10 @@
 export function normalizeKenyanPhone(value: string): string | null {
   const digits = value.replace(/\D/g, "");
   if (!digits) return null;
-  let normalized = digits;
-  if (digits.startsWith("0") && digits.length === 10) normalized = `254${digits.slice(1)}`;
-  else if ((digits.startsWith("7") || digits.startsWith("1")) && digits.length === 9) normalized = `254${digits}`;
-  if (normalized.length < 8 || normalized.length > 15) return null;
-  return normalized;
+  if (/^0[17]\d{8}$/.test(digits)) return `254${digits.slice(1)}`;
+  if (/^[17]\d{8}$/.test(digits)) return `254${digits}`;
+  if (/^254[17]\d{8}$/.test(digits)) return digits;
+  return null;
 }
 
 export function whatsappHref(phone: string | null | undefined, message: string): string | null {

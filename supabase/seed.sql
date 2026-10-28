@@ -274,7 +274,7 @@ insert into public.core_competencies(code,title) values
  ('LEARNING_TO_LEARN','Learning to learn'),('SELF_EFFICACY','Self-efficacy')
 on conflict(code) do nothing;
 
--- App settings: editable defaults, no assumed contacts, prices, commissions or payment credentials.
+-- App settings: editable defaults; no assumed contacts or prices.
 insert into public.settings(key,value,description,is_public) values
  ('junior_curriculum_mode','"rationalised"'::jsonb,'Display rationalised or expanded Junior School areas; default is rationalised.','true'),
  ('senior_lessons_per_week','40'::jsonb,'Informational Senior School timetable guidance: about 40 lessons per week.','true'),

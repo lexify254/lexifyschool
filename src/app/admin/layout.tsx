@@ -17,7 +17,9 @@ export default async function AdminLayout({ children }: Readonly<{ children: Rea
           </div>
           <nav aria-label="Administrator navigation">
             <Link href="/admin">Overview</Link>
+            <Link href="/admin/content">Content</Link>
             <Link href="/admin/curriculum">Curriculum</Link>
+            <Link href="/admin/users">Users</Link>
           </nav>
         </header>
         {children}

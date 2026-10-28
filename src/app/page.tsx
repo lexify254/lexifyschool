@@ -130,7 +130,7 @@ export default function HomePage() {
             <div className="section-head__copy">
               <span className="section-kicker">Teacher marketplace</span>
               <h2 className="section-title" id="teacher-title">Find a teacher for your learning goals</h2>
-              <p className="section-copy">Review available subjects, class formats and payment bases before you get in touch.</p>
+              <p className="section-copy">Review available subjects, class formats and pricing bases before you get in touch.</p>
             </div>
             <Link className="button button--line" href="/teachers">Browse teachers <ArrowRight size={16} /></Link>
           </div>

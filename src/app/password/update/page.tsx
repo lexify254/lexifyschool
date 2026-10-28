@@ -1,2 +1,5 @@
-import { PasswordUpdateForm } from "@/components/auth/AuthForms";
-export default function PasswordUpdatePage() { return <PasswordUpdateForm />; }
+import { PasswordUpdateForm } from "./password-update-form";
+
+export default function PasswordUpdatePage() {
+  return <PasswordUpdateForm />;
+}

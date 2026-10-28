@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
+import { getServerSupabaseCookieOptions } from "@/lib/supabase/cookies";
 
 export async function getSupabaseServerClient(): Promise<SupabaseClient | null> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -9,7 +10,7 @@ export async function getSupabaseServerClient(): Promise<SupabaseClient | null> 
 
   const cookieStore = await cookies();
   return createServerClient(url, key, {
-    cookieOptions: { sameSite: "none", secure: true },
+    cookieOptions: getServerSupabaseCookieOptions(),
     cookies: {
       getAll() {
         return cookieStore.getAll();
@@ -17,7 +18,7 @@ export async function getSupabaseServerClient(): Promise<SupabaseClient | null> 
       setAll(cookiesToSet) {
         try {
           cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, { ...options, sameSite: "none", secure: true });
+            cookieStore.set(name, value, { ...options, ...getServerSupabaseCookieOptions() });
           });
         } catch {
           // Server components cannot write cookies; src/proxy.ts refreshes sessions on requests.

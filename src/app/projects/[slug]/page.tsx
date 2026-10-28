@@ -1,39 +1,172 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ProjectInquiryAction } from "@/components/projects/ProjectInquiryAction";
+import styles from "@/components/projects/store.module.css";
+import { formatProjectPrice, getProjectPriceKes } from "@/lib/data/projects";
 import { getPublishedProduct } from "@/lib/data/public-catalogue";
 
 export const dynamic = "force-dynamic";
 type Props = { params: Promise<{ slug: string }> };
-const money = (amount: unknown) => new Intl.NumberFormat("en-KE", { style: "currency", currency: "KES", maximumFractionDigits: 0 }).format(Number(amount) || 0);
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const product = await getPublishedProduct(slug);
-  if (!product) return { title: "Resource not found", robots: { index: false, follow: false } };
-  const title = String(product.title);
-  const description = String(product.short_description || product.description || `View ${title} on the Lexify School projects store.`).slice(0, 155);
+  if (!product) {
+    return {
+      title: "Resource not found",
+      robots: { index: false, follow: false },
+    };
+  }
+  const title = String(product.title || "Digital resource");
+  const description = String(
+    product.short_description ||
+      product.description ||
+      `View published information about ${title} on the Lexify School projects store.`
+  ).slice(0, 155);
   const origin = process.env.NEXT_PUBLIC_SITE_URL;
   const path = `/projects/${encodeURIComponent(slug)}`;
-  return { title, description, alternates: origin ? { canonical: new URL(path, origin).toString() } : undefined, openGraph: { type: "website", title: `${title} | Lexify School`, description, url: origin ? new URL(path, origin).toString() : undefined, images: product.cover_image_url ? [{ url: String(product.cover_image_url) }] : undefined }, twitter: { card: "summary_large_image", title: `${title} | Lexify School`, description, images: product.cover_image_url ? [String(product.cover_image_url)] : undefined } };
+  const canonical = origin ? new URL(path, origin).toString() : undefined;
+  const image = product.cover_image_url
+    ? [String(product.cover_image_url)]
+    : undefined;
+
+  return {
+    title,
+    description,
+    alternates: canonical ? { canonical } : undefined,
+    openGraph: {
+      type: "website",
+      title: `${title} | Lexify School`,
+      description,
+      url: canonical,
+      images: image,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${title} | Lexify School`,
+      description,
+      images: image,
+    },
+  };
+}
+
+function listedValue(value: unknown): string {
+  return typeof value === "string" && value.trim() ? value : "Not listed";
 }
 
 export default async function ProjectDetailPage({ params }: Props) {
   const { slug } = await params;
   const product = await getPublishedProduct(slug);
   if (!product) notFound();
-  const saleActive = product.sale_price_kes != null && (!product.sale_starts_at || new Date(String(product.sale_starts_at)) <= new Date()) && (!product.sale_ends_at || new Date(String(product.sale_ends_at)) >= new Date());
-  const price = product.is_free ? "Free" : money(saleActive ? product.sale_price_kes : product.price_kes);
-  return <main className="page-content"><div className="container">
-    <p className="breadcrumb"><Link href="/projects">Projects store</Link> <span aria-hidden="true">/</span> {String(product.title)}</p>
-    <section className="product-detail">
-      <div className="product-detail__media">{product.preview_url ? <img src={String(product.preview_url)} alt={`Watermarked preview of ${String(product.title)}`} /> : product.cover_image_url ? <img src={String(product.cover_image_url)} alt={`${String(product.title)} cover`} /> : <div className="product-detail__placeholder" aria-hidden="true">Lexify Resource</div>}</div>
-      <div className="product-detail__copy"><span className="section-kicker">Digital resource</span><h1>{String(product.title)}</h1><p>{String(product.short_description || product.description || "No additional description has been published.")}</p>
-        <p className="product-detail__price">{price}</p>
-        <dl className="details-list">{product.software_name ? <><dt>Software</dt><dd>{String(product.software_name)}{product.software_version ? ` ${String(product.software_version)}` : ""}</dd></> : null}{Array.isArray(product.file_types) && product.file_types.length ? <><dt>File types</dt><dd>{(product.file_types as string[]).join(", ")}</dd></> : null}{product.difficulty ? <><dt>Difficulty</dt><dd>{String(product.difficulty)}</dd></> : null}{product.licence_type ? <><dt>Licence</dt><dd>{String(product.licence_type)}</dd></> : null}{typeof product.access_days === "number" ? <><dt>Access period</dt><dd>{product.access_days} days</dd></> : null}{typeof product.download_limit === "number" ? <><dt>Download limit</dt><dd>{product.download_limit}</dd></> : null}</dl>
-        <Link className="button button--gold" href={`/login?next=${encodeURIComponent(`/projects/${slug}`)}`}>{product.is_free ? "Sign in to download" : "Sign in to purchase"}</Link><p className="muted">The original project file is kept private. Eligible purchasers receive a limited, expiring download link after payment verification.</p>
+
+  const title = String(product.title || "Digital resource");
+  const code = String(product.code || slug);
+  const description = String(
+    product.short_description ||
+      product.description ||
+      "No additional description has been published."
+  );
+  const fileTypes = Array.isArray(product.file_types)
+    ? (product.file_types as unknown[]).map(String).join(", ") || "Not listed"
+    : "Not listed";
+  const software = product.software_name
+    ? `${String(product.software_name)}${product.software_version ? ` ${String(product.software_version)}` : ""}`
+    : "Not listed";
+  const now = new Date();
+  const listedPrice = formatProjectPrice(product, now);
+  const currentPriceKes = getProjectPriceKes(product, now);
+
+  return (
+    <main className="page-content">
+      <div className="container">
+        <p className="breadcrumb">
+          <Link href="/projects">Projects store</Link>{" "}
+          <span aria-hidden="true">/</span> {title}
+        </p>
+
+        <section className={styles.detailLayout}>
+          <div className={styles.detailMedia}>
+            {product.preview_url ? (
+              <img
+                src={String(product.preview_url)}
+                alt={`Preview of ${title}`}
+              />
+            ) : product.cover_image_url ? (
+              <img
+                src={String(product.cover_image_url)}
+                alt={`${title} cover`}
+              />
+            ) : (
+              <div className={styles.detailPlaceholder} aria-hidden="true">
+                Lexify resource
+              </div>
+            )}
+          </div>
+
+          <div className={styles.detailCopy}>
+            <span className="section-kicker">Published digital resource</span>
+            <h1>{title}</h1>
+            <p className={styles.detailDescription}>{description}</p>
+            <p className={styles.detailPrice}>
+              <span className="sr-only">Current listed price: </span>
+              {listedPrice}
+            </p>
+
+            <dl className={styles.detailsList}>
+              <dt>Software</dt>
+              <dd>{software}</dd>
+              <dt>File types</dt>
+              <dd>{fileTypes}</dd>
+              <dt>Difficulty</dt>
+              <dd>{listedValue(product.difficulty)}</dd>
+              <dt>Licence</dt>
+              <dd>{listedValue(product.licence_type)}</dd>
+              <dt>Listing code</dt>
+              <dd>{code}</dd>
+            </dl>
+
+            <p className={styles.inquiryNote}>
+              {product.is_free === true
+                ? "The published listing marks this resource as free; ask the team to confirm availability and how access is arranged."
+                : `The current listed amount is ${listedPrice}. It is informational only and is not a completed order or payment.`}
+            </p>
+
+            <section
+              className={styles.inquiry}
+              aria-labelledby="project-inquiry-title"
+            >
+              <h2 id="project-inquiry-title">Ask about this resource</h2>
+              <p>
+                Contact Lexify School about availability, the current listed
+                price, licence terms or possible delivery arrangements.
+              </p>
+              <ProjectInquiryAction
+                code={code}
+                title={title}
+                listedPrice={listedPrice}
+              />
+            </section>
+          </div>
+        </section>
+
+        <section
+          className={styles.inquiry}
+          aria-labelledby="listing-info-title"
+        >
+          <h2 id="listing-info-title">About this listing</h2>
+          <p>
+            This page displays published catalogue information only. A
+            WhatsApp conversation is an enquiry; it does not confirm
+            availability or create download access. Confirm any terms directly
+            with the seller; digital files remain private until an access grant
+            is issued.
+          </p>
+        </section>
       </div>
-    </section>
-    <section className="section-block"><h2 className="section-title">Before you buy</h2><ul className="content-list"><li>Check the listed software and version requirements.</li><li>Review the published licence and permitted use.</li><li>Project files are scanned before publication; macro-enabled files display an additional safety warning.</li><li>Downloads are limited to the purchased entitlement and expire according to the published access rules.</li></ul></section>
-  </div></main>;
+      <span className="sr-only">
+        Current listed price in KES: {currentPriceKes}
+      </span>
+    </main>
+  );
 }
