@@ -3,7 +3,7 @@
 -- Set exactly one selector below. Email comparison is exact and case-sensitive.
 do $$
 declare
-  target_email text := 'REPLACE_WITH_EXACT_EXISTING_AUTH_EMAIL';
+  target_email text := 'lorinyaalex@gmail.com';
   target_user_id uuid := null;
   matched_id uuid;
   matched_email text;
