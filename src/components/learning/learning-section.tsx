@@ -165,7 +165,7 @@ export function LearningSection({
   );
   const studentRecord = role === "student";
   const teacher = role === "teacher";
-  const payment = section === "payment" || section === "payments";
+  const sellerContact = section === "payment" || section === "payments";
   return (
     <>
       <header className={styles.heading}>
@@ -178,18 +178,18 @@ export function LearningSection({
           {data.note}
         </aside>
       ) : null}
-      {payment ? (
+      {sellerContact ? (
         <section className={styles.panel}>
           <h2>Talk to the class seller</h2>
           <p>
-            Use the seller’s WhatsApp to ask about availability and payment
-            instructions. This is an inquiry only; no payment or transaction is
-            created or recorded here.
+            Use the seller’s WhatsApp to ask about availability and current
+            arrangements. Lexify records an outbound handoff click only; it does
+            not see whether a message is sent or a sale is completed.
           </p>
-          {data.paymentHref ? (
+          {data.whatsappHandoffHref ? (
             <a
               className="button button--blue"
-              href={data.paymentHref}
+              href={data.whatsappHandoffHref}
               target="_blank"
               rel="noreferrer"
             >
@@ -469,7 +469,9 @@ export function LearningSection({
                 <strong>{record.title}</strong>
                 {record.detail ? <span>{record.detail}</span> : null}
                 {record.meta ? <small>{record.meta}</small> : null}
-                {payment && record.classId && !data.paymentHref ? (
+                {sellerContact &&
+                record.classId &&
+                !data.whatsappHandoffHref ? (
                   <Link
                     className="button button--line button--small"
                     href={`/${role}/payments?classId=${encodeURIComponent(record.classId)}`}
@@ -554,7 +556,7 @@ export function LearningSection({
             ))}
           </ul>
         </section>
-      ) : !payment ? (
+      ) : !sellerContact ? (
         <div className={styles.empty}>
           <h2>No learning records yet</h2>
           <p>

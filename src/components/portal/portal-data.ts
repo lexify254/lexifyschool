@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { CurrentProfile } from "@/lib/auth/guards";
 import type { PortalRecord } from "./portal-ui";
+import { buildWhatsAppHandoffHref } from "@/lib/whatsapp/handoff";
 import { whatsappHref } from "@/lib/whatsapp/links";
 
 export type SubjectItem = {
@@ -621,10 +622,13 @@ export async function readParentDashboard(
       x => String(x.profile_id) === String(klass.teacher_id)
     );
     const key = `${klass.id}:${klass.teacher_id}`;
-    const href = whatsappHref(
+    const validContact = whatsappHref(
       teacher?.public_whatsapp,
       `Hello, I am contacting you about ${text(klass.title, "the class")} for a linked learner.`
     );
+    const href = validContact
+      ? (buildWhatsAppHandoffHref("class", String(klass.id)) ?? undefined)
+      : undefined;
     contacts.set(key, {
       title: text(teacher?.public_name, "Teacher"),
       detail: text(klass.title, "Enrolled class"),
@@ -828,6 +832,35 @@ export async function readTeacherDashboard(
       detail: date(lesson.starts_at),
       meta: classesById.get(String(lesson.class_id))?.title,
     }));
+  const [handoffResult, receiptResult] = await Promise.all([
+    (async () => {
+      try {
+        return await (client as any).rpc("get_whatsapp_handoff_total_count");
+      } catch {
+        return { data: null, error: true };
+      }
+    })(),
+    (async () => {
+      try {
+        return await client
+          .from("seller_receipts")
+          .select("id", { count: "exact", head: true })
+          .eq("seller_id", profile.id);
+      } catch {
+        return { count: null, error: true };
+      }
+    })(),
+  ]);
+  const handoffCount =
+    !handoffResult?.error &&
+    handoffResult?.data != null &&
+    Number.isFinite(Number(handoffResult.data))
+      ? Number(handoffResult.data)
+      : null;
+  const receiptCount =
+    !receiptResult?.error && typeof receiptResult?.count === "number"
+      ? receiptResult.count
+      : null;
   return {
     stats: [
       {
@@ -851,6 +884,16 @@ export async function readTeacherDashboard(
       {
         label: "Homework submissions",
         value: String(homeworkRows.filter(x => Boolean(x.submitted_at)).length),
+      },
+      {
+        label: "WhatsApp handoff clicks",
+        value: handoffCount === null ? "—" : String(handoffCount),
+        note: "Outbound clicks only; not messages, unique people, or sales",
+      },
+      {
+        label: "Seller-issued receipts",
+        value: receiptCount === null ? "—" : String(receiptCount),
+        note: "Records you manually issued after an external sale",
       },
     ],
     subjects: classes
@@ -1365,10 +1408,13 @@ export async function readSection(
         const teacher = teachers.find(
           x => String(x.profile_id) === String(klass.teacher_id)
         );
-        const contact = whatsappHref(
+        const validContact = whatsappHref(
           teacher?.public_whatsapp,
           `Hello, I am contacting you about ${text(klass.title, "the class")} for a linked learner.`
         );
+        const contact = validContact
+          ? (buildWhatsAppHandoffHref("class", String(klass.id)) ?? undefined)
+          : undefined;
         return {
           title: text(teacher?.public_name, "Teacher"),
           detail: text(klass.title, "Enrolled class"),

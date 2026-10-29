@@ -2,7 +2,7 @@
 
 Lexify School is a mobile-first online-learning platform for Kenyan students, parents and guardians, teachers, and guests. The application uses **Next.js App Router, React, TypeScript, Tailwind CSS, Supabase Auth, Postgres, Storage and Row Level Security**.
 
-**Sales are handled outside the website.** Tutoring, Academy, and digital-resource listings may show seller-provided prices, but there is no checkout or payment processing. A booking or purchase inquiry opens the seller's WhatsApp with a prefilled item-specific message. Contacting a seller does not complete a booking or purchase, create an entitlement, or record a payment.
+**Sales are handled outside the website.** Tutoring, Academy, and digital-resource listings may show seller-provided prices, but there is no on-site checkout or payment processing. An inquiry opens the seller's WhatsApp with a prefilled item-specific message. After independently confirming an external sale, a seller may issue a seller-reported PDF receipt; it is not a Lexify-verified payment or tax invoice.
 
 ## Local development
 
@@ -23,7 +23,7 @@ Open the development server on port 3000. `pnpm check`, `pnpm test`, and `pnpm b
 
 Use Supabase as the database and authentication source; the inherited Drizzle/MySQL starter is not used by this application. Apply the reviewed migrations in numeric order to a new Supabase project, then run `supabase/seed.sql`. The migrations create application schema and security policies without payment tables or payment-provider integrations. Treat the Supabase database as shared by development and production, and do not run destructive operations against a populated project without a separate backup and explicit review.
 
-The schema contains no payment tables or provider integrations. Prices are informational; class, course and product purchase inquiries open the relevant seller's WhatsApp chat. A WhatsApp handoff is not a completed sale, booking or payment.
+The schema contains no payment tables or provider integrations. Prices are informational; class, course and product inquiries open the relevant seller's WhatsApp chat. The application counts aggregate outbound handoff clicks by listing and seller only; it cannot identify unique people, determine whether a message was sent, or infer a sale from a click.
 
 Configure the Supabase Auth site URL and redirect allowlist for local and deployed HTTPS origins, including `/auth/callback`. Enable email verification and password recovery. Phone OTP is not assumed available without an SMS provider. Use private storage buckets for learner and course material; return files only after authorization and through short-lived signed URLs.
 
@@ -37,7 +37,11 @@ The application must not invent enrolment counts, ratings, contact details, pric
 
 ## WhatsApp handoff
 
-Use the existing WhatsApp URL helper to validate and normalize the seller number and URL-encode a concise inquiry. The application opens `https://wa.me/<digits>?text=<encoded message>`; it does not send WhatsApp messages on a user's behalf. Do not track the click as a booking or sale. Do not display phone numbers as public page text. If a teacher or platform seller number has not been configured, display the contact-unavailable state and ask an administrator to complete the setting.
+Public seller links point to `/api/whatsapp/handoff`, which resolves the published listing and seller server-side, records one aggregate click by item and seller, and redirects to a validated `https://wa.me/<digits>?text=<encoded message>` destination. The application does not send WhatsApp messages. Counts mean outbound link clicks only—not unique people, messages delivered, bookings or sales—and no clicker identity, phone, message content or raw IP is recorded for this metric. Do not display phone numbers as public page text. If a seller number is missing or invalid, show the contact-unavailable state.
+
+## Seller-issued receipts
+
+Active teachers can manage their own records at `/teacher/receipts`; administrators can review all seller-issued receipts at `/admin/receipts` and issue platform receipts. Issuance requires the seller to attest that the sale was completed directly with the buyer outside Lexify School. An inquiry click never creates a receipt. A receipt records seller, receipt number/date, item and description, quantity, unit price and total in KES, plus an optional buyer name; do not enter a buyer phone number or payment credentials. The PDF uses the Lexify School mark and a QR code linking to public verification. That page exposes only the receipt number, seller, item, total and issue date. Receipts are seller-reported, not payment-verified by Lexify School, and are not tax invoices.
 
 ## Environment and integrations
 
@@ -50,7 +54,7 @@ Email, SMS, and malware scanning are optional configured services. If scanning i
 ### Vercel
 
 1. Import the repository into Vercel and select the Next.js framework.
-2. Configure `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and `NEXT_PUBLIC_SITE_URL`. Keep service-role, mail and malware-scanning variables server-only.
+2. Configure `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and `NEXT_PUBLIC_SITE_URL` (the public HTTPS origin used in receipt QR links). Keep service-role, mail and malware-scanning variables server-only.
 3. Set Supabase Auth's HTTPS site URL and redirect allowlist for the deployment domain.
 4. Set a verified `WHATSAPP_ADMIN_NUMBER` in the deployment's server-side environment before enabling central course or resource inquiries.
 5. Review privacy, terms, child-safety, contact details, curriculum data and upload scanning before accepting real users.

@@ -1,18 +1,15 @@
-import { whatsappHref } from "@/lib/whatsapp/links";
-import { buildProjectInquiryMessage } from "@/lib/data/projects";
+import { buildWhatsAppHandoffHref } from "@/lib/whatsapp/handoff";
 import styles from "./store.module.css";
 
 type Props = {
-  code: string;
-  title: string;
-  listedPrice: string;
+  productId: string;
+  contactAvailable: boolean;
 };
 
-export function ProjectInquiryAction({ code, title, listedPrice }: Props) {
-  const href = whatsappHref(
-    process.env.WHATSAPP_ADMIN_NUMBER,
-    buildProjectInquiryMessage({ code, title, listedPrice })
-  );
+export function ProjectInquiryAction({ productId, contactAvailable }: Props) {
+  const href = contactAvailable
+    ? buildWhatsAppHandoffHref("product", productId)
+    : null;
 
   return (
     <div>
@@ -33,8 +30,8 @@ export function ProjectInquiryAction({ code, title, listedPrice }: Props) {
       )}
       <p className={styles.inquiryNote}>
         This opens an enquiry only. A chat does not confirm a sale or payment,
-        or grant download access. Confirm availability, price, licence terms
-        and any delivery arrangements directly with the seller.
+        or grant download access. Confirm availability, price, licence terms and
+        any delivery arrangements directly with the seller.
       </p>
     </div>
   );

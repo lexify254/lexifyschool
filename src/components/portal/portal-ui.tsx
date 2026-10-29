@@ -81,6 +81,7 @@ const nav: Record<
       icon: UsersRound,
     },
     { title: "Teaching materials", href: "/teacher/materials", icon: FileText },
+    { title: "Sales receipts", href: "/teacher/receipts", icon: FileText },
     { title: "Groups", href: "/teacher/groups", icon: MessageCircle },
     { title: "Badge status", href: "/teacher/badge", icon: GraduationCap },
     { title: "Profile & settings", href: "/teacher/profile", icon: Settings },
@@ -225,7 +226,17 @@ export function RecordList({
         <li className={styles.record} key={`${item.title}-${index}`}>
           <div className={styles.recordBody}>
             <strong>
-              {item.href?.startsWith("https://") ? (
+              {item.href?.startsWith("/api/whatsapp/handoff?") ? (
+                <a
+                  href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="button button--line button--small"
+                >
+                  {item.title}
+                  <span className="sr-only"> (opens seller WhatsApp)</span>
+                </a>
+              ) : item.href?.startsWith("https://") ? (
                 <a
                   href={item.href}
                   target="_blank"

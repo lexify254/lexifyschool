@@ -20,6 +20,7 @@ export default async function AdminLayout({ children }: Readonly<{ children: Rea
             <Link href="/admin/content">Content</Link>
             <Link href="/admin/curriculum">Curriculum</Link>
             <Link href="/admin/users">Users</Link>
+            <Link href="/admin/receipts">Receipts</Link>
           </nav>
         </header>
         {children}

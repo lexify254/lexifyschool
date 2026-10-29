@@ -6,6 +6,7 @@ import {
   getPublicTeacherProfile,
   isPublicTeacherId,
 } from "@/lib/data/teacher-marketplace";
+import { buildWhatsAppHandoffHref } from "@/lib/whatsapp/handoff";
 import { whatsappHref } from "@/lib/whatsapp/links";
 
 export const dynamic = "force-dynamic";
@@ -103,7 +104,9 @@ export default async function TeacherProfilePage({ params }: Props) {
 
   const { teacher, subjects, classes } = result.data;
   const name = teacher.public_name || "Lexify teacher";
-  const chat = whatsappHref(teacher.public_whatsapp, enquiryMessage(name));
+  const chat = whatsappHref(teacher.public_whatsapp, enquiryMessage(name))
+    ? buildWhatsAppHandoffHref("teacher_profile", id)
+    : null;
 
   return (
     <main className="page-content">
@@ -230,7 +233,9 @@ export default async function TeacherProfilePage({ params }: Props) {
                 const classChat = whatsappHref(
                   teacher.public_whatsapp,
                   enquiryMessage(name, classRecord.title)
-                );
+                )
+                  ? buildWhatsAppHandoffHref("class", classRecord.id)
+                  : null;
                 return (
                   <article className="content-card" key={classRecord.id}>
                     <h3>{classRecord.title}</h3>

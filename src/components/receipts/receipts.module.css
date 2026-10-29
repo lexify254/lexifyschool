@@ -1,0 +1,179 @@
+.manager {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.formPanel,
+.empty,
+.receiptCard {
+  border: 1px solid #dce5ef;
+  border-radius: 1rem;
+  background: #fff;
+  padding: 1.25rem;
+}
+
+.formPanel h2,
+.listHeading h2 {
+  margin: 0;
+  color: #1e3a8a;
+}
+
+.formPanel > p,
+.listHeading p,
+.receiptCard p {
+  color: #536276;
+  line-height: 1.55;
+}
+
+.form {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: 1rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.4rem;
+  color: #17243a;
+  font-weight: 650;
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  border: 1px solid #cbd6e3;
+  border-radius: 0.65rem;
+  padding: 0.7rem 0.8rem;
+  color: #17243a;
+  background: #fff;
+  font: inherit;
+  font-weight: 400;
+}
+
+.field input:focus,
+.field textarea:focus {
+  outline: 3px solid rgb(245 158 11 / 25%);
+  border-color: #1e3a8a;
+}
+
+.description {
+  max-width: 48rem;
+}
+
+.confirmation {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  max-width: 55rem;
+  padding: 0.9rem;
+  border: 1px solid #f4d184;
+  border-radius: 0.75rem;
+  background: #fff9eb;
+  color: #27364b;
+  line-height: 1.5;
+}
+
+.confirmation input {
+  flex: 0 0 auto;
+  margin-top: 0.25rem;
+  accent-color: #1e3a8a;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.7rem;
+  margin-top: 0.5rem;
+}
+
+.error,
+.success {
+  margin: 0;
+  border-radius: 0.6rem;
+  padding: 0.7rem 0.85rem;
+}
+
+.error {
+  color: #8b1d1d;
+  background: #fff1f1;
+}
+
+.success {
+  color: #14532d;
+  background: #ecfdf3;
+}
+
+.listHeading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.listHeading p {
+  margin: 0.35rem 0 0;
+}
+
+.list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.receiptCard {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.receiptCard p {
+  margin: 0;
+}
+
+.receiptTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.receiptTop > div {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.receiptTop span,
+.detail,
+.seller {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.total {
+  color: #1e3a8a;
+  white-space: nowrap;
+}
+
+.item {
+  color: #17243a !important;
+  font-weight: 700;
+}
+
+.verifyLink {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 650;
+  color: #1e3a8a;
+  text-underline-offset: 0.2em;
+}
+
+.empty {
+  color: #536276;
+  line-height: 1.55;
+}

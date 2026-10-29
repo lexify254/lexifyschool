@@ -115,6 +115,8 @@ const teacher: CurrentProfile = {
 
 describe("portal dashboard data scope", () => {
   it("shows only confirmed learners and their active-class teacher contacts", async () => {
+    const classOneId = "11111111-1111-4111-8111-111111111111";
+    const classTwoId = "22222222-2222-4222-8222-222222222222";
     const { client, trace } = mockSupabase({
       parent_student_links: [
         {
@@ -143,14 +145,14 @@ describe("portal dashboard data scope", () => {
       enrolments: [
         {
           id: "e1",
-          class_id: "class-1",
+          class_id: classOneId,
           student_id: "child-confirmed",
           status: "active",
           lessons_remaining: 2,
         },
         {
           id: "e2",
-          class_id: "class-2",
+          class_id: classTwoId,
           student_id: "child-pending",
           status: "active",
           lessons_remaining: 4,
@@ -158,14 +160,14 @@ describe("portal dashboard data scope", () => {
       ],
       classes: [
         {
-          id: "class-1",
+          id: classOneId,
           title: "Reading",
           teacher_id: "teacher-2",
           learning_area_id: "area-1",
           schedule: {},
         },
         {
-          id: "class-2",
+          id: classTwoId,
           title: "Science",
           teacher_id: "teacher-3",
           learning_area_id: "area-2",
@@ -195,8 +197,8 @@ describe("portal dashboard data scope", () => {
       detail: "Reading",
       meta: "Contact via WhatsApp",
     });
-    expect(data.teachers?.[0].href).toMatch(
-      /^https:\/\/wa\.me\/254712345678\?/
+    expect(data.teachers?.[0].href).toBe(
+      `/api/whatsapp/handoff?kind=class&id=${classOneId}`
     );
     expect(data.teachers?.[0].href).not.toContain("0712345678");
     const linksRead = trace.find(

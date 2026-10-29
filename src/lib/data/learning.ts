@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { CurrentProfile } from "@/lib/auth/guards";
+import { buildWhatsAppHandoffHref } from "@/lib/whatsapp/handoff";
 import { whatsappHref } from "@/lib/whatsapp/links";
 
 export type LearningRole = "student" | "parent" | "teacher" | "guest";
@@ -24,7 +25,7 @@ export type LearningPageData = {
   lessons: LearningRecord[];
   submissions: LearningRecord[];
   note?: string;
-  paymentHref?: string;
+  whatsappHandoffHref?: string;
 };
 type Row = Record<string, any>;
 const asRows = (value: unknown): Row[] =>
@@ -773,19 +774,21 @@ export async function readLearningSection(
         q => q.eq("profile_id", String(classRow.teacher_id)),
         1
       );
-      page.paymentHref =
-        whatsappHref(
-          seller[0]?.public_whatsapp,
-          `Hello, I am enquiring about ${text(classRow.title, "your class")}. Please share availability and payment instructions.`
-        ) ?? undefined;
+      const validContact = whatsappHref(
+        seller[0]?.public_whatsapp,
+        `Hello, I am enquiring about ${text(classRow.title, "your class")}. Please share availability and current class arrangements.`
+      );
+      page.whatsappHandoffHref = validContact
+        ? (buildWhatsAppHandoffHref("class", String(classRow.id)) ?? undefined)
+        : undefined;
       page.note =
-        "Payments are arranged directly with the seller over WhatsApp. Lexify School does not create or track a transaction from this page.";
+        "The link records an aggregate WhatsApp handoff click. Lexify School does not see whether a message is sent or whether a sale is completed.";
       page.records = [
         {
           id: String(classRow.id),
           title: text(classRow.title),
           detail: text(seller[0]?.public_name, "Class seller"),
-          meta: page.paymentHref
+          meta: page.whatsappHandoffHref
             ? "Seller WhatsApp is available"
             : "Seller WhatsApp is not available",
         },

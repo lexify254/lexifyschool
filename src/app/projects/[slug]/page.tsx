@@ -3,8 +3,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProjectInquiryAction } from "@/components/projects/ProjectInquiryAction";
 import styles from "@/components/projects/store.module.css";
-import { formatProjectPrice, getProjectPriceKes } from "@/lib/data/projects";
+import {
+  buildProjectInquiryMessage,
+  formatProjectPrice,
+  getProjectPriceKes,
+} from "@/lib/data/projects";
 import { getPublishedProduct } from "@/lib/data/public-catalogue";
+import { whatsappHref } from "@/lib/whatsapp/links";
 
 export const dynamic = "force-dynamic";
 type Props = { params: Promise<{ slug: string }> };
@@ -76,6 +81,12 @@ export default async function ProjectDetailPage({ params }: Props) {
   const now = new Date();
   const listedPrice = formatProjectPrice(product, now);
   const currentPriceKes = getProjectPriceKes(product, now);
+  const contactAvailable = Boolean(
+    whatsappHref(
+      process.env.WHATSAPP_ADMIN_NUMBER,
+      buildProjectInquiryMessage({ code, title, listedPrice })
+    )
+  );
 
   return (
     <main className="page-content">
@@ -142,9 +153,8 @@ export default async function ProjectDetailPage({ params }: Props) {
                 price, licence terms or possible delivery arrangements.
               </p>
               <ProjectInquiryAction
-                code={code}
-                title={title}
-                listedPrice={listedPrice}
+                productId={String(product.id)}
+                contactAvailable={contactAvailable}
               />
             </section>
           </div>
@@ -156,11 +166,10 @@ export default async function ProjectDetailPage({ params }: Props) {
         >
           <h2 id="listing-info-title">About this listing</h2>
           <p>
-            This page displays published catalogue information only. A
-            WhatsApp conversation is an enquiry; it does not confirm
-            availability or create download access. Confirm any terms directly
-            with the seller; digital files remain private until an access grant
-            is issued.
+            This page displays published catalogue information only. A WhatsApp
+            conversation is an enquiry; it does not confirm availability or
+            create download access. Confirm any terms directly with the seller;
+            digital files remain private until an access grant is issued.
           </p>
         </section>
       </div>

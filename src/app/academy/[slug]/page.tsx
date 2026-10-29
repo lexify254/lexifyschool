@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { whatsappHref } from "@/lib/whatsapp/links";
 import { getPublishedAcademyCourse } from "@/lib/data/academy";
+import { buildWhatsAppHandoffHref } from "@/lib/whatsapp/handoff";
+import { whatsappHref } from "@/lib/whatsapp/links";
 
 export const dynamic = "force-dynamic";
 type Props = { params: Promise<{ slug: string }> };
@@ -91,10 +92,18 @@ export default async function AcademyCoursePage({ params }: Props) {
   const { course, modules, lessons, price, seller } = result.data;
   const currentPrice = formatPrice(price);
   const sellerName = String(seller?.public_name || "the instructor");
+  const instructorAssigned = typeof course.instructor_id === "string";
+  const inquirySeller = instructorAssigned ? sellerName : "Lexify School";
   const inquiryHref = whatsappHref(
-    typeof seller?.public_whatsapp === "string" ? seller.public_whatsapp : null,
-    `Hello ${sellerName}, I found the ${String(course.title)} course on Lexify School and would like to ask about its availability, course access, and current price.`
-  );
+    instructorAssigned
+      ? typeof seller?.public_whatsapp === "string"
+        ? seller.public_whatsapp
+        : null
+      : process.env.WHATSAPP_ADMIN_NUMBER,
+    `Hello ${inquirySeller}, I found the ${String(course.title)} course on Lexify School and would like to ask about its availability and current price.`
+  )
+    ? buildWhatsAppHandoffHref("course", String(course.id))
+    : null;
   const previewLessonCount = lessons.filter(
     lesson => lesson.is_free_preview === true
   ).length;
@@ -150,12 +159,13 @@ export default async function AcademyCoursePage({ params }: Props) {
                 target="_blank"
                 rel="noreferrer"
               >
-                Ask the instructor on WhatsApp
+                Ask {instructorAssigned ? "the instructor" : "Lexify School"} on
+                WhatsApp
               </a>
             ) : (
               <p role="status">
-                An instructor WhatsApp contact is not available for this course.
-                No payment or enrolment is started from this page.
+                A seller WhatsApp contact is not available for this course. No
+                payment or enrolment is started from this page.
               </p>
             )}
           </div>
