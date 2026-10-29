@@ -18,6 +18,7 @@ export function LoginForm({
   const [error, setError] = useState(initialError ?? "");
   const [status, setStatus] = useState(initialStatus ?? "");
   const [busy, setBusy] = useState(false);
+  const isAdminSignIn = nextPath?.split(/[?#]/, 1)[0] === "/admin";
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -76,8 +77,8 @@ export function LoginForm({
     <main className="auth-page">
       <div className="container">
         <section className="auth-card" style={{ maxWidth: 520, margin: "0 auto" }}>
-          <h1>Sign in</h1>
-          <p className="auth-card__intro">Welcome back to Lexify School.</p>
+          <h1>{isAdminSignIn ? "Admin sign in" : "Sign in"}</h1>
+          <p className="auth-card__intro">{isAdminSignIn ? "Enter your administrator email and password." : "Welcome back to Lexify School."}</p>
           {error && <div role="alert" className="form-error">{error}</div>}
           {status && <div role="status" className="form-success">{status}</div>}
           <form className="form-grid" onSubmit={submit}>
@@ -96,6 +97,7 @@ export function LoginForm({
           <p className="auth-card__intro" style={{ marginTop: 16 }}>
             <Link href="/password/reset">Forgot your password?</Link> · <Link href="/signup">Create account</Link>
           </p>
+          {isAdminSignIn && <p className="auth-card__intro">First time setting up Admin? <Link href="/signup/guest">Create an account and verify the designated administrator email</Link>. Admin access is granted only after verification.</p>}
         </section>
       </div>
     </main>

@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { Compass, GraduationCap, Presentation, UsersRound } from "lucide-react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { normalizeKenyanPhone } from "@/lib/whatsapp/links";
-import { SubjectCard } from "@/components/subject-card";
 import styles from "./signup.module.css";
 import {
   classifyCurriculumSystem,
@@ -32,13 +31,12 @@ const plainError = (error: unknown, fallback: string) => {
   return text ? text.replace(/\s+/g, " ").slice(0, 260) : fallback;
 };
 const text = (value: unknown) => String(value ?? "").trim();
-const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
 export function RoleChooser({ issue }: { issue?: string }) {
   const descriptions: Record<Role, string> = {
     student: "Choose your learning level, curriculum and subjects.",
-    parent: "Stay connected to a learner and request a parent link.",
-    teacher: "Share your teaching subjects and experience.",
+    parent: "Create your account and add learner preferences if you wish.",
+    teacher: "Choose the curriculum, grades and subjects you teach.",
     guest: "Explore Lexify School with a basic account.",
   };
   const recoveryMessages: Record<string, string> = {
@@ -116,7 +114,7 @@ export function SignupForm({ role: requestedRole }: { role: string }) {
   const client = useMemo(() => getSupabaseBrowserClient(), []);
   const [catalogue, setCatalogue] = useState<Catalogue>(blankCatalogue);
   const [catalogueError, setCatalogueError] = useState("");
-  const [loadingCatalogue, setLoadingCatalogue] = useState(role === "student" || role === "teacher");
+  const [loadingCatalogue, setLoadingCatalogue] = useState(role === "student" || role === "teacher" || role === "parent");
   const [systemId, setSystemId] = useState("");
   const [gradeId, setGradeId] = useState("");
   const [pathwayId, setPathwayId] = useState("");
@@ -130,15 +128,9 @@ export function SignupForm({ role: requestedRole }: { role: string }) {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [recoverable, setRecoverable] = useState(false);
-  const [method, setMethod] = useState<"email" | "phone">("email");
-  const [otpSent, setOtpSent] = useState(false);
-  const [avatar, setAvatar] = useState<File | null>(null);
-  const [phoneForOtp, setPhoneForOtp] = useState("");
-  const [pendingSignupMetadata, setPendingSignupMetadata] = useState<Row>({});
-  const [pendingParentStudentId, setPendingParentStudentId] = useState("");
 
   useEffect(() => {
-    if (role !== "student" && role !== "teacher") return;
+    if (role !== "student" && role !== "teacher" && role !== "parent") return;
     if (!client) { setLoadingCatalogue(false); setCatalogueError("Account services are not configured, so the live curriculum is unavailable."); return; }
     let active = true;
     loadCatalogue(client).then((data) => { if (active) { setCatalogue(data); setCatalogueError(""); } }).catch((e) => { if (active) setCatalogueError(plainError(e, "Could not load the live curriculum.")); }).finally(() => { if (active) setLoadingCatalogue(false); });
@@ -185,7 +177,7 @@ export function SignupForm({ role: requestedRole }: { role: string }) {
     return role === "student" ? junior ? [...selectedAreas, ...(languageId ? [languageId] : []), ...(religionId ? [religionId] : []), ...optionalAreas] : [...selectedAreas, ...optionalAreas] : [];
   }
 
-  async function finalizeAuthenticatedUser(userId: string, userRole: Role, subjectPayload?: { gradeId: string; ids: string[]; pathwayId?: string; trackId?: string }, signupMetadata: Row = {}, parentStudentId = "") {
+  async function finalizeAuthenticatedUser(userId: string, userRole: Role, subjectPayload?: { gradeId: string; ids: string[]; pathwayId?: string; trackId?: string }, signupMetadata: Row = {}) {
     if (!client) throw new Error("Account services are unavailable; profile setup could not be saved.");
     if (userRole === "student" && subjectPayload) {
       const { data, error: rpcError } = await client.rpc("save_student_subjects", {
@@ -228,29 +220,9 @@ export function SignupForm({ role: requestedRole }: { role: string }) {
         if (detailError || !savedDetails) throw new Error(`Teacher details were not saved: ${plainError(detailError, "the teacher profile row was not found")}.`);
       }
     }
-    if (userRole === "parent") {
-      const childId = parentStudentId || (document.getElementById("childProfileId") as HTMLInputElement | null)?.value.trim() || "";
-      if (childId) {
-        const { data: link, error: linkError } = await client.from("parent_student_links").insert({ parent_id: userId, student_id: childId, relationship: "parent/guardian" }).select("id").maybeSingle();
-        if (linkError || !link) throw new Error(`The parent-link request was not saved: ${plainError(linkError, "Supabase did not confirm the request")}.`);
-      }
-    }
     if (userRole === "student" || userRole === "teacher") {
       const { error: metadataError } = await client.auth.updateUser({ data: { pending_subject_selection: null } });
       if (metadataError) throw new Error(`Your profile was saved, but signup recovery data could not be cleared: ${plainError(metadataError, "metadata update failed")}.`);
-    }
-    if (avatar) {
-      const ext = avatar.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
-      const path = `${userId}/${Date.now()}.${ext}`;
-      const { error: uploadError } = await client.storage.from("avatars").upload(path, avatar, { upsert: true, contentType: avatar.type || "image/jpeg" });
-      if (uploadError) throw new Error(`Your profile picture was not uploaded: ${plainError(uploadError, "storage is unavailable")}.`);
-      const { data } = client.storage.from("avatars").getPublicUrl(path);
-      const { data: savedProfile, error: profileError } = await client.from("profiles").update({ avatar_url: data.publicUrl }).eq("id", userId).select("id").maybeSingle();
-      if (profileError || !savedProfile) throw new Error(`Your profile picture URL was not saved: ${plainError(profileError, "the profile row was not found")}.`);
-      if (userRole === "teacher") {
-        const { data: savedTeacher, error: teacherError } = await client.from("teacher_details").update({ public_avatar_url: data.publicUrl }).eq("profile_id", userId).select("profile_id").maybeSingle();
-        if (teacherError || !savedTeacher) throw new Error(`Your teacher profile picture was not saved: ${plainError(teacherError, "the teacher profile row was not found")}.`);
-      }
     }
   }
 
@@ -261,30 +233,16 @@ export function SignupForm({ role: requestedRole }: { role: string }) {
     const fullName = text(form.get("fullName"));
     const email = text(form.get("email"));
     const password = text(form.get("password"));
-    const rawPhone = text(form.get("phone"));
-    const phoneDigits = rawPhone ? normalizeKenyanPhone(rawPhone) : null;
-    const phone = phoneDigits ? `+${phoneDigits}` : "";
     const rawWhatsapp = text(form.get("whatsapp"));
     const whatsappDigits = rawWhatsapp ? normalizeKenyanPhone(rawWhatsapp) : null;
     const whatsapp = whatsappDigits ? `+${whatsappDigits}` : "";
-    const rawGuardianPhone = text(form.get("guardianPhone"));
-    const guardianPhoneDigits = rawGuardianPhone ? normalizeKenyanPhone(rawGuardianPhone) : null;
-    const guardianPhone = guardianPhoneDigits ? `+${guardianPhoneDigits}` : "";
-    const rawGuardianWhatsapp = text(form.get("guardianWhatsApp"));
-    const guardianWhatsappDigits = rawGuardianWhatsapp ? normalizeKenyanPhone(rawGuardianWhatsapp) : null;
-    const guardianWhatsapp = guardianWhatsappDigits ? `+${guardianWhatsappDigits}` : "";
     if (!fullName) { setError("Enter your full name."); return; }
-    if ((role === "parent" || role === "teacher" || method === "phone") && !phone) { setError("Enter a valid Kenyan mobile number in +254 format."); return; }
-    if (rawPhone && !phone) { setError("Enter a valid Kenyan mobile number, such as +254712345678."); return; }
     if (rawWhatsapp && !whatsapp) { setError("Enter a valid Kenyan WhatsApp number, such as +254712345678."); return; }
-    if (rawGuardianPhone && !guardianPhone) { setError("Enter a valid Kenyan guardian phone number in +254 format."); return; }
-    if (rawGuardianWhatsapp && !guardianWhatsapp) { setError("Enter a valid Kenyan guardian WhatsApp number in +254 format."); return; }
     if (role === "student") {
       if (!catalogue || catalogueError || !grade || !grade.is_active || !system) { setError("Select an active education system and grade from the live catalogue."); return; }
       if (!validation?.valid) { setError(validation?.errors[0]?.message ?? "Complete and validate your curriculum selection before continuing."); return; }
       if (kcse && !valid844Math) { setError("Choose exactly one Group I Mathematics option: code 121 or code 122."); return; }
       if (junior && (selectedAreas.length !== 9 || !religionId || !languageId)) { setError("Choose all nine required Junior School areas, one language option, and exactly one Religious Education option."); return; }
-      if (!text(form.get("guardianName")) || !guardianPhone) { setError("Enter a guardian name and a valid phone number in +254 format."); return; }
       if (!form.get("guardianConsent")) { setError("A parent or guardian’s consent is required to create a student account."); return; }
     }
     if (role === "guest" && !form.get("adultConsent")) { setError("Confirm that you are 18 or older, or that your parent or guardian has given consent."); return; }
@@ -293,27 +251,28 @@ export function SignupForm({ role: requestedRole }: { role: string }) {
       const experience = text(form.get("experience"));
       if (experience && (!Number.isInteger(Number(experience)) || Number(experience) < 0 || Number(experience) > 80)) { setError("Enter teaching experience as a whole number from 0 to 80 years."); return; }
     }
-    if (role === "parent") {
-      const childId = text(form.get("childProfileId"));
-      if (childId && !isUuid(childId)) { setError("Enter a valid learner profile UUID or leave the field blank."); return; }
+    if (role === "parent" && (systemId || gradeId || selectedAreas.length)) {
+      const validSubjectIds = new Set(gradeRows.map((item) => String(item.id)));
+      if (!system || !grade || grade.system_id !== system.id || selectedAreas.some((id) => !validSubjectIds.has(id))) {
+        setError("Choose a matching curriculum and active grade for your optional learner preferences."); return;
+      }
     }
-    if (method === "email" && password.length < 8) { setError("Use a password with at least 8 characters."); return; }
+    if (password.length < 8) { setError("Use a password with at least 8 characters."); return; }
     const ids = role === "student" ? selectedIds() : [];
     const experienceYears = role === "teacher" ? text(form.get("experience")) : "";
     const qualifications = role === "teacher" ? text(form.get("qualifications")) : "";
     const preferred = ["Weekday mornings", "Weekday afternoons", "Weekday evenings", "Weekends"].filter((label) => form.get(`time-${label}`));
-    const parentStudentId = role === "parent" ? text(form.get("childProfileId")) : "";
     const hobbies = role === "student" ? text(form.get("hobbies")).split(",").map((item) => item.trim()).filter(Boolean) : [];
     const teacherQualifications = qualifications.split(",").map((item) => item.trim()).filter(Boolean);
     const metadata: Row = {
-      role, full_name: fullName, phone: phone || null, whatsapp: whatsapp || null,
+      role, full_name: fullName, whatsapp: whatsapp || null,
       education_system_id: role === "student" ? systemId : null,
       grade_id: role === "student" ? gradeId : null,
+      preferred_education_system_id: role === "parent" ? system?.id ?? null : null,
+      preferred_grade_id: role === "parent" ? gradeId || null : null,
+      preferred_subject_ids: role === "parent" ? selectedAreas : [],
       pathway_id: role === "student" && senior ? pathwayId || null : null,
       track_id: role === "student" && senior ? trackId || null : null,
-      guardian_name: role === "student" ? text(form.get("guardianName")) : null,
-      guardian_phone: role === "student" ? guardianPhone : null,
-      guardian_whatsapp: role === "student" ? guardianWhatsapp || null : null,
       preferred_lesson_times: preferred,
       consent_given: role === "student" ? Boolean(form.get("guardianConsent")) : false,
       consent_at: role === "student" && form.get("guardianConsent") ? new Date().toISOString() : null,
@@ -324,25 +283,11 @@ export function SignupForm({ role: requestedRole }: { role: string }) {
       adult_or_guardian_consent: role === "guest" ? Boolean(form.get("adultConsent")) : false,
       ...(role === "student" ? { pending_subject_selection: ids } : role === "teacher" ? { pending_subject_selection: teacherPairs.map((pair) => ({ grade_id: pair.gradeId, learning_area_id: pair.areaId, experience_years: experienceYears ? Number(experienceYears) : null, qualifications: teacherQualifications })) } : {}),
     };
-    setPendingSignupMetadata(metadata);
-    setPendingParentStudentId(parentStudentId);
     setWorking(true);
     let accountCreated = false;
     try {
       const callbackUrl = new URL("/auth/callback", window.location.origin);
-      if (role === "parent") {
-        const childId = text(form.get("childProfileId"));
-        if (childId) callbackUrl.searchParams.set("parent_student_id", childId);
-      }
       const redirectTo = callbackUrl.toString();
-      if (method === "phone") {
-        if (!phone) throw new Error("Enter a valid Kenyan mobile number in +254 format to use SMS verification.");
-        setPhoneForOtp(phone);
-        const { error: otpError } = await client.auth.signInWithOtp({ phone, options: { shouldCreateUser: true, data: metadata, channel: "sms" } });
-        if (otpError) throw otpError;
-        accountCreated = true;
-        setOtpSent(true); setNotice("A sign-in code was requested. Enter the code sent by your configured SMS provider to complete signup."); return;
-      }
       const { data, error: signUpError } = await client.auth.signUp({ email, password, options: { data: metadata, emailRedirectTo: redirectTo } });
       if (signUpError) throw signUpError;
       accountCreated = Boolean(data.user);
@@ -352,11 +297,11 @@ export function SignupForm({ role: requestedRole }: { role: string }) {
         return;
       }
       if (data.session && data.user) {
-        await finalizeAuthenticatedUser(data.user.id, role, role === "student" ? { gradeId, ids, pathwayId: senior ? pathwayId : undefined, trackId: senior ? trackId : undefined } : undefined, metadata, parentStudentId);
+        await finalizeAuthenticatedUser(data.user.id, role, role === "student" ? { gradeId, ids, pathwayId: senior ? pathwayId : undefined, trackId: senior ? trackId : undefined } : undefined, metadata);
         router.replace(roleDestinations[role]); return;
       }
       if (!data.user) throw new Error("Supabase did not return a user record for this signup request.");
-      setNotice("Signup is pending email verification. Check your inbox and open the verification link. Curriculum and profile selections are submitted to Supabase after verification; your profile picture is not uploaded until you are signed in.");
+      setNotice("Signup is pending email verification. Check your inbox and open the verification link to finish setup.");
     } catch (e) {
       setError(accountCreated
         ? `Supabase created your login, but profile setup did not finish: ${plainError(e, "one or more profile writes failed")}. Sign in to continue; do not submit signup again.`
@@ -366,37 +311,15 @@ export function SignupForm({ role: requestedRole }: { role: string }) {
     finally { setWorking(false); }
   }
 
-  async function verifyPhone(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setError(""); setNotice(""); setRecoverable(false); setWorking(true);
-    if (!client) { setError("Account services are not configured."); setWorking(false); return; }
-    const phone = phoneForOtp;
-    const token = text((document.getElementById("otp") as HTMLInputElement | null)?.value);
-    if (!phone) { setError("The verification phone number is missing. Please restart signup."); setWorking(false); return; }
-    let accountVerified = false;
-    try {
-      const { data, error: verifyError } = await client.auth.verifyOtp({ phone, token, type: "sms" });
-      if (verifyError || !data.user) throw verifyError ?? new Error("That code could not be verified.");
-      accountVerified = true;
-      await finalizeAuthenticatedUser(data.user.id, role, role === "student" ? { gradeId, ids: selectedIds(), pathwayId: senior ? pathwayId : undefined, trackId: senior ? trackId : undefined } : undefined, pendingSignupMetadata, pendingParentStudentId);
-      router.replace(roleDestinations[role]);
-    } catch (e) {
-      setError(accountVerified
-        ? `Your phone was verified, but profile setup did not finish: ${plainError(e, "one or more profile writes failed")}. Sign in to continue; do not restart signup.`
-        : `${plainError(e, "The code could not be verified.")} If SMS OTP is not enabled for this Supabase project, use email signup instead.`);
-      if (accountVerified) setRecoverable(true);
-    }
-    finally { setWorking(false); }
-  }
-
   const chooserDisabled = loadingCatalogue || Boolean(catalogueError) || !gradeId;
   const rolesTitle = role === "student" ? "Student account" : `${roleLabels[role]} account`;
   return <main className={`auth-page ${styles.signupPage}`}><div className="container"><section className={`auth-card ${styles.signupPanel}`}>
-    <p className="eyebrow">CREATE ACCOUNT · {roleLabels[role].toUpperCase()}</p><h1>{rolesTitle}</h1><p className="auth-card__intro">Enter your details. Required fields are marked; your account is not created until Supabase confirms signup.</p>
-    {catalogueError && (role === "student" || role === "teacher") ? <div className="form-error" role="alert">{catalogueError} We will not accept curriculum selections without the live catalogue.</div> : null}
+    <p className="eyebrow">CREATE ACCOUNT · {roleLabels[role].toUpperCase()}</p><h1>{rolesTitle}</h1><p className="auth-card__intro">Create your account with email and password, then verify the link sent to your inbox.</p>
+    {catalogueError && (role === "student" || role === "teacher" || role === "parent") ? <div className="form-error" role="alert">{catalogueError} Curriculum preferences will be available after the catalogue is restored.</div> : null}
     {error && <div className="form-error" role="alert">{error}{recoverable ? <> <Link href="/login">Go to sign in</Link></> : null}</div>}{notice && <div className="form-success" role="status">{notice}</div>}
-    {otpSent ? <form className="form-grid" onSubmit={verifyPhone}><p className="auth-card__intro">Enter the SMS code sent to {phoneForOtp}.</p><div className="form-field"><label htmlFor="otp">SMS verification code</label><input id="otp" name="otp" inputMode="numeric" autoComplete="one-time-code" required /></div><button className="button button--primary" disabled={working}>{working ? "Verifying…" : "Verify code and finish signup"}</button></form> : <form className="form-grid" onSubmit={processEmailSignup}>
-      <div className="form-grid form-grid--two"><div className="form-field"><label htmlFor="fullName">Full name *</label><input id="fullName" name="fullName" autoComplete="name" required maxLength={120} /></div><div className="form-field"><label htmlFor="avatar">Profile picture <span>(optional)</span></label><input id="avatar" type="file" accept="image/*" onChange={(e) => setAvatar(e.target.files?.[0] ?? null)} /><small>Uploaded to the public avatars bucket only after you are signed in.</small></div></div>
-      <div className="form-grid form-grid--two"><div className="form-field"><label htmlFor="phone">Mobile number {method === "phone" || role === "teacher" || role === "parent" ? "*" : "(optional)"}</label><input id="phone" name="phone" type="tel" autoComplete="tel" required={method === "phone" || role === "teacher" || role === "parent"} placeholder="+254…" /></div><div className="form-field"><label htmlFor="whatsapp">WhatsApp number (optional)</label><input id="whatsapp" name="whatsapp" type="tel" placeholder="+254…" /></div></div>
+    <form className="form-grid" onSubmit={processEmailSignup}>
+      <div className="form-field"><label htmlFor="fullName">Full name *</label><input id="fullName" name="fullName" autoComplete="name" required maxLength={120} /></div>
+      {role === "teacher" && <div className="form-field"><label htmlFor="whatsapp">WhatsApp number (optional)</label><input id="whatsapp" name="whatsapp" type="tel" placeholder="+254…" /></div>}
       {role === "student" && <>
         <div className="form-divider"/><h2>Education and curriculum</h2>
         <div className="form-grid form-grid--two"><div className="form-field"><label htmlFor="system">Education system *</label><select id="system" value={systemId} required disabled={loadingCatalogue || Boolean(catalogueError)} onChange={(e) => { setSystemId(e.target.value); setGradeId(""); setSelectedAreas([]); setOptionalAreas([]); setReligionId(""); setLanguageId(""); setPathwayId(""); setTrackId(""); }}><option value="">Choose a system</option>{catalogue.systems.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div><div className="form-field"><label htmlFor="grade">Grade / level *</label><select id="grade" value={gradeId} required disabled={!systemId || Boolean(catalogueError)} onChange={(e) => chooseGrade(e.target.value)}><option value="">Choose an active grade</option>{availableGrades.map((item) => <option key={item.id} value={item.id} disabled={!item.is_active}>{item.name}{!item.is_active ? " (not currently active)" : ""}</option>)}</select><small>Inactive grades cannot be selected.</small></div></div>
@@ -405,19 +328,15 @@ export function SignupForm({ role: requestedRole }: { role: string }) {
         {grade && kcse && <><p className="auth-card__intro">Choose 7–9 subjects. English, Kiswahili and exactly one Mathematics option (121 or 122) are required.</p><AreaChoices rows={gradeRows} selected={selectedAreas} onToggle={(id) => toggle(selectedAreas, setSelectedAreas, id)} title="8-4-4 subjects" /><ValidationMessage result={validation} /></>}
         {grade && junior && <ValidationMessage result={validation} />}
         {(junior || senior || kcse) && validation && !validation.valid ? <p className="form-error" role="status">Selection incomplete: {validation.errors[0]?.message}</p> : null}
-        <div className="form-grid form-grid--two"><div className="form-field"><label htmlFor="school">School (optional)</label><input id="school" name="school" maxLength={140}/></div><div className="form-field"><label htmlFor="county">County (optional)</label><input id="county" name="county" maxLength={100}/></div><div className="form-field"><label htmlFor="goals">Learning goals (optional)</label><input id="goals" name="goals" maxLength={500}/></div><div className="form-field"><label htmlFor="hobbies">Hobbies (optional)</label><input id="hobbies" name="hobbies" maxLength={250}/></div></div>
-        <fieldset className="form-field" style={{ border: 0, padding: 0 }}><legend>Preferred lesson times (optional)</legend><div className="form-grid form-grid--two">{["Weekday mornings", "Weekday afternoons", "Weekday evenings", "Weekends"].map((time) => <label key={time} className="form-check"><input name={`time-${time}`} type="checkbox"/> {time}</label>)}</div></fieldset>
-        <div className="form-grid form-grid--two"><div className="form-field"><label htmlFor="guardianName">Guardian name *</label><input id="guardianName" name="guardianName" required maxLength={120}/></div><div className="form-field"><label htmlFor="guardianPhone">Guardian phone *</label><input id="guardianPhone" name="guardianPhone" type="tel" required placeholder="+254…"/></div><div className="form-field"><label htmlFor="guardianWhatsApp">Guardian WhatsApp (optional)</label><input id="guardianWhatsApp" name="guardianWhatsApp" type="tel" placeholder="+254…"/></div></div>
         <label className="form-check"><input name="guardianConsent" type="checkbox" required/> My parent or guardian has given consent for this student account and the information submitted.</label>
       </>}
-      {role === "teacher" && <><div className="form-grid form-grid--two"><div className="form-field"><label htmlFor="experience">Teaching experience in years (self-declared, optional)</label><input id="experience" name="experience" type="number" min="0" max="80"/></div><div className="form-field"><label htmlFor="qualifications">Qualifications (optional)</label><input id="qualifications" name="qualifications" placeholder="Separate items with commas" maxLength={300}/></div></div><p className="auth-card__intro">No ID or TSC number is requested.</p><TeacherChoices catalogue={catalogue} pairs={teacherPairs} setPairs={setTeacherPairs}/></>}
-      {role === "parent" && <div className="form-field"><label htmlFor="childProfileId">Learner profile UUID (optional)</label><input id="childProfileId" name="childProfileId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"/><small>This creates a pending request only. The learner must confirm before any learner data is shared.</small></div>}
+      {role === "teacher" && <><p className="auth-card__intro">Choose at least one active grade and subject. You can add profile details later.</p><TeacherChoices catalogue={catalogue} pairs={teacherPairs} setPairs={setTeacherPairs}/></>}
+      {role === "parent" && <section className="form-grid"><div className="form-divider"/><h2>Optional learner preferences</h2><p className="auth-card__intro">Choose a curriculum, grade and subjects if useful. You can link a learner after creating your account.</p><div className="form-grid form-grid--two"><div className="form-field"><label htmlFor="parentSystem">Curriculum</label><select id="parentSystem" value={systemId} disabled={Boolean(catalogueError)} onChange={(e) => { setSystemId(e.target.value); setGradeId(""); setSelectedAreas([]); }}><option value="">Choose a curriculum</option>{catalogue.systems.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div><div className="form-field"><label htmlFor="parentGrade">Grade / level</label><select id="parentGrade" value={gradeId} disabled={!systemId || Boolean(catalogueError)} onChange={(e) => { setGradeId(e.target.value); setSelectedAreas([]); }}><option value="">Choose an active grade</option>{availableGrades.map((item) => <option key={item.id} value={item.id} disabled={!item.is_active}>{item.name}{!item.is_active ? " (not currently active)" : ""}</option>)}</select></div></div>{grade && <AreaChoices rows={gradeRows.filter((item) => !item.is_optional_activity)} selected={selectedAreas} onToggle={(id) => toggle(selectedAreas, setSelectedAreas, id)} title="Preferred subjects (optional)" />}</section>}
       {role === "guest" && <label className="form-check"><input name="adultConsent" type="checkbox" required/> I am 18 or older, or my parent/guardian has given consent.</label>}
-      <div className="form-grid"><fieldset style={{ border: 0, padding: 0 }}><legend>How would you like to register?</legend><label className="form-check"><input type="radio" name="authmethod" checked={method === "email"} onChange={() => setMethod("email")}/> Email and password</label><label className="form-check"><input type="radio" name="authmethod" checked={method === "phone"} onChange={() => setMethod("phone")}/> Phone number and SMS code</label></fieldset></div>
-      <div className="form-grid form-grid--two"><div className="form-field"><label htmlFor="email">Email address {method === "email" ? "*" : "(optional)"}</label><input id="email" name="email" type="email" autoComplete="email" required={method === "email"} /></div>{method === "email" && <div className="form-field"><label htmlFor="password">Password *</label><input id="password" name="password" type="password" autoComplete="new-password" minLength={8} required/></div>}</div>
-      {method === "phone" && <p className="auth-card__intro">SMS signup depends on your Supabase phone provider being enabled. Provider errors will be shown, not hidden.</p>}
-      <button type="submit" className="button button--primary" disabled={working || loadingCatalogue || ((role === "student" || role === "teacher") && Boolean(catalogueError)) || (role === "student" && (chooserDisabled || Boolean(validation && !validation.valid) || (junior && (selectedAreas.length !== 9 || !religionId || !languageId)) || (kcse && !valid844Math)))}>{working ? "Please wait…" : method === "phone" ? "Send SMS verification code" : "Create account"}</button>
-    </form>}
+      <div className="form-grid form-grid--two"><div className="form-field"><label htmlFor="email">Email address *</label><input id="email" name="email" type="email" autoComplete="email" required /></div><div className="form-field"><label htmlFor="password">Password *</label><input id="password" name="password" type="password" autoComplete="new-password" minLength={8} required/></div></div>
+      <p className="auth-card__intro">You’ll receive an email verification link. Open it to finish creating your account.</p>
+      <button type="submit" className="button button--primary" disabled={working || loadingCatalogue || ((role === "student" || role === "teacher") && Boolean(catalogueError)) || (role === "student" && (chooserDisabled || Boolean(validation && !validation.valid) || (junior && (selectedAreas.length !== 9 || !religionId || !languageId)) || (kcse && !valid844Math)))}>{working ? "Please wait…" : "Create account"}</button>
+    </form>
     <p className="auth-card__intro" style={{ marginTop: 18 }}><Link href="/signup">Change account type</Link> · <Link href="/login">Already have an account?</Link></p>
   </section></div></main>;
 }
@@ -430,19 +349,73 @@ function JuniorChoices({ catalogue, gradeId, rows, selected, optional, religionI
   const religionParent = (row: Row | undefined) => /religious education|religion/.test(parentLabel(row));
   const languageParent = (row: Row | undefined) => /language|kiswahili/.test(parentLabel(row)) && !religionParent(row);
   const religion = rows.filter((row) => row.parent_area_id && religionParent(areaById.get(row.parent_area_id)) && /\b(CRE|IRE|HRE)\b|religious education/i.test(`${row.code} ${row.title}`));
-  const languageChoices = rows.filter((row) => {
-    if (!row.parent_area_id || !languageParent(areaById.get(row.parent_area_id))) return false;
-    return /kiswahili|sign language|\bksl\b/i.test(`${row.code} ${row.title}`);
-  });
-  const gradeLinks = new Map(catalogue.links.filter((item) => item.grade_id === gradeId).map((item) => [item.learning_area_id, item]));
+  const languageChoices = rows.filter((row) => row.parent_area_id && languageParent(areaById.get(row.parent_area_id)) && /kiswahili|sign language|\bksl\b/i.test(`${row.code} ${row.title}`));
   const extras = rows.filter((row) => {
-    const link = gradeLinks.get(row.id);
+    const link = catalogue.links.find((item) => item.grade_id === gradeId && item.learning_area_id === row.id);
     return row.restriction_code === "TUTORING_ONLY" || row.is_optional_activity || link?.role === "optional" || link?.role === "elective";
   });
-  return <section className="form-grid"><h3>Junior School: all nine required learning areas</h3><p className="auth-card__intro">The required parent areas are included from the active grade. Choose one language and one Religious Education sub-area; these explicit choices are checked separately.</p><div className="subject-grid">{parents.map((row) => <SubjectCard key={row.id} title={row.title} iconName={row.icon_name} accentColor={row.accent_color} note="Required learning area" selected={selected.includes(row.id)} disabled disabledReason="Required for this grade" />)}</div>{parents.length !== 9 && <p className="form-error" role="alert">The live catalogue lists {parents.length} required parent areas, not nine. Signup is blocked until the catalogue is corrected.</p>}<strong>Choose exactly one language option *</strong>{languageChoices.length ? <div className="subject-grid">{languageChoices.map((row) => { const ksl = row.restriction_code === "DEAF_LEARNER_ONLY" || /sign language|\bksl\b/i.test(`${row.code} ${row.title}`); return <SubjectCard key={row.id} title={row.title} iconName={row.icon_name} accentColor={row.accent_color} note={ksl ? "Requires administrator authorization" : row.description} selected={languageId === row.id} disabled={ksl} disabledReason={ksl ? "Requires administrator authorization" : undefined} onClick={() => onLanguage(languageId === row.id ? "" : row.id)} />; })}</div> : <p className="form-error" role="alert">The active grade has no Kiswahili learning-area choice in the live catalogue.</p>}<strong>Choose exactly one Religious Education option *</strong>{religion.length ? <div className="subject-grid">{religion.map((row) => <SubjectCard key={row.id} title={row.title} iconName={row.icon_name} accentColor={row.accent_color} note={row.description} selected={religionId === row.id} onClick={() => onReligion(religionId === row.id ? "" : row.id)} />)}</div> : <p className="form-error" role="alert">The live catalogue has no active CRE, IRE, or HRE choice for this grade.</p>}<p className="auth-card__intro">Kenya Sign Language requires administrator authorization. Optional tutoring extras are separate and do not count toward the nine required areas.</p><strong>Optional tutoring extras</strong><div className="subject-grid">{extras.map((row) => <SubjectCard key={row.id} title={row.title} iconName={row.icon_name} accentColor={row.accent_color} selected={optional.includes(row.id)} onClick={() => onOptional(row.id)} note="Optional tutoring only" />)}</div></section>;
+
+  return (
+    <section className="form-grid">
+      <h3>Junior School</h3>
+      <p className="auth-card__intro">Required core areas are included automatically. Choose one language and one Religious Education option.</p>
+      <div className="form-field">
+        <strong>Included core areas</strong>
+        <ul>{parents.map((row) => <li key={row.id}>{row.title}</li>)}</ul>
+      </div>
+      {parents.length !== 9 && <p className="form-error" role="alert">The live catalogue lists {parents.length} required parent areas, not nine. Signup is blocked until the catalogue is corrected.</p>}
+      <div className="form-grid form-grid--two">
+        <div className="form-field">
+          <label htmlFor="juniorLanguage">Language option *</label>
+          <select id="juniorLanguage" value={languageId} required onChange={(event) => onLanguage(event.target.value)}>
+            <option value="">Choose a language</option>
+            {languageChoices.map((row) => {
+              const restricted = row.restriction_code === "DEAF_LEARNER_ONLY" || /sign language|\bksl\b/i.test(`${row.code} ${row.title}`);
+              return <option key={row.id} value={row.id} disabled={restricted}>{row.title}{restricted ? " (requires administrator authorization)" : ""}</option>;
+            })}
+          </select>
+          {!languageChoices.length && <small>The active grade has no language options in the live catalogue.</small>}
+        </div>
+        <div className="form-field">
+          <label htmlFor="juniorReligion">Religious Education *</label>
+          <select id="juniorReligion" value={religionId} required onChange={(event) => onReligion(event.target.value)}>
+            <option value="">Choose one option</option>
+            {religion.map((row) => <option key={row.id} value={row.id}>{row.title}</option>)}
+          </select>
+          {!religion.length && <small>The active grade has no CRE, IRE or HRE options in the live catalogue.</small>}
+        </div>
+      </div>
+      <p className="auth-card__intro">Optional tutoring extras are separate and do not count toward the nine required areas.</p>
+      <ChoiceDropdown rows={extras} selected={optional} onToggle={onOptional} title="Optional tutoring extras" />
+    </section>
+  );
 }
+
+function ChoiceDropdown({ rows, selected, onToggle, disabled = false, title }: { rows: Row[]; selected: string[]; onToggle: (id: string) => void; disabled?: boolean; title: string }) {
+  return (
+    <fieldset className="form-field">
+      <legend>{title}</legend>
+      <details className={styles.choiceDropdown}>
+        <summary>{selected.length ? `${selected.length} selected` : `Choose ${title.toLowerCase()}`}</summary>
+        <div className={styles.choiceDropdownList}>
+          {rows.map((row) => {
+            const restricted = row.restriction_code === "DEAF_LEARNER_ONLY";
+            return (
+              <label className={styles.choiceDropdownOption} key={row.id}>
+                <input type="checkbox" checked={selected.includes(String(row.id))} disabled={disabled || restricted} onChange={() => onToggle(String(row.id))} />
+                <span>{row.title}{restricted ? " — requires administrator authorization" : disabled ? " — choose a pathway track first" : ""}</span>
+              </label>
+            );
+          })}
+        </div>
+      </details>
+      {disabled && <small>Choose a pathway track first.</small>}
+    </fieldset>
+  );
+}
+
 function AreaChoices({ rows, selected, onToggle, disabled = false, title }: { rows: Row[]; selected: string[]; onToggle: (id: string) => void; disabled?: boolean; title: string }) {
-  return <section><h3>{title}</h3>{!rows.length ? <p className="form-error">No eligible learning areas are available for this selection in the live catalogue.</p> : <div className="subject-grid">{rows.map((row) => <SubjectCard key={row.id} title={row.title} iconName={row.icon_name} accentColor={row.accent_color} note={row.description} selected={selected.includes(row.id)} disabled={disabled || row.restriction_code === "DEAF_LEARNER_ONLY"} disabledReason={row.restriction_code === "DEAF_LEARNER_ONLY" ? "Requires administrator authorization" : disabled ? "Choose the pathway track first" : undefined} onClick={() => onToggle(row.id)} />)}</div>}</section>;
+  return <section className="form-grid">{!rows.length ? <p className="form-error">No eligible learning areas are available for this selection in the live catalogue.</p> : <ChoiceDropdown rows={rows} selected={selected} onToggle={onToggle} disabled={disabled} title={title} />}</section>;
 }
 function ValidationMessage({ result }: { result: ReturnType<typeof validateSeniorSelection> | ReturnType<typeof validateJuniorSelection> | ReturnType<typeof validateEightFourFourSelection> | null }) {
   if (!result) return null;

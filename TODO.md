@@ -16,11 +16,12 @@ Scope follows `lexifyschool.md` (Master Build Prompt, Version 3), which replaces
 ## Phase 1 — Project setup, Supabase schema, authentication and roles
 
 - [x] Use Next.js App Router, React, TypeScript and Tailwind; use Supabase Postgres, Auth, Storage, Realtime, RLS and Edge Functions/server routes. Provide Vercel-compatible deployment instructions.
-- [ ] Implement roles `student`, `parent`, `teacher`, `guest`, `admin`; signup offers only Student, Parent, Teacher or Guest. Admin is created manually with a SQL seed/setup script.
-- [ ] Login redirects student to `/student/dashboard`, parent to `/parent/dashboard`, teacher to `/teacher/dashboard`, guest to `/guest/dashboard`, and admin to `/admin`.
+- [x] Implement roles `student`, `parent`, `teacher`, `guest`, `admin`; public signup offers only Student, Parent, Teacher or Guest. Provide a one-time first-Admin claim only after the designated owner's email is verified; bind the resulting Admin role to the Supabase Auth UUID and never expose Admin as a public signup role.
+- [x] Visiting `/admin` while signed out opens a simple email/password login. Successful login redirects student to `/student/dashboard`, parent to `/parent/dashboard`, teacher to `/teacher/dashboard`, guest to `/guest/dashboard`, and an authorized Admin UUID to `/admin`. A first-time Admin account can be created from the login page, must verify its email, and can then claim the initial Admin role.
 - [ ] Enforce authorization on the server and in database RLS, not only by hiding UI. A non-admin who opens `/admin` receives a plain 404; include login rate limiting and Supabase MFA support for admin.
 - [x] Block suspended accounts in protected server pages/APIs and authenticated public-schema/Storage RLS policies; preserve each user's own profile-status read so the suspension notice still works.
-- [ ] Include verification, password reset, international-format Kenyan phone normalization (+2547...), secure avatar upload, validation, friendly onboarding progress and guest upgrade to student/parent while preserving course access and learning progress.
+- [x] Use email/password signup with required email verification and password reset; remove SMS/phone-OTP signup. No phone number is required to create a student, teacher or parent account; teacher WhatsApp is optional.
+- [ ] Keep secure avatar upload, validation, friendly onboarding progress and guest upgrade to student/parent while preserving course access and learning progress.
 - [x] Create `.env.example` with Supabase, WhatsApp contact, email and malware-scan settings; never commit secrets.
 
 ## Phase 2 — Curriculum schema, seed data, illustrations and Curriculum Manager
@@ -38,13 +39,13 @@ Scope follows `lexifyschool.md` (Master Build Prompt, Version 3), which replaces
 
 ## Phase 3 — Role-specific signup and subject-choice flows
 
-- [ ] Student signup collects full name, picture, system/level, subject choices, guardian name, guardian phone and WhatsApp, optional student WhatsApp, email or phone, password or OTP option, parental-consent checkbox, and optional school/county/goals/lesson times/hobbies. Show compulsory illustrated cards, guided required choices, live rule validation, final review and confirmation.
+- [x] Student signup uses full name, email/password and verified email, then simple education-system and grade dropdowns plus a subject dropdown for the selected curriculum. Keep live catalogue/rule validation and the required parent/guardian-consent checkbox; remove SMS signup and defer nonessential profile details.
 - [ ] Junior student chooses CRE/IRE/HRE, Kiswahili or KSL only if deaf, and optional extra tutoring subjects.
 - [ ] Senior student chooses pathway/track and exactly three valid electives subject to stored rules; show clear invalid-choice messages.
 - [ ] 8-4-4 student chooses KCSE subjects subject to Group I–V rules.
-- [ ] Teacher signup collects name, photo, WhatsApp, mobile, email and password, then profile bio, curriculum-backed systems/levels/subjects taught, self-declared experience, optional qualifications, classes and pricing. No national ID or TSC number is required.
-- [ ] Parent signup collects name, optional picture, phone, WhatsApp, email and password, then links/confirms one or more children.
-- [ ] Guest signup stays light: name, email or phone, password, optional WhatsApp/photo, and consent checkbox “I am 18 or older, or my parent/guardian has given consent.” No grade/pathway/guardian fields; after signup go to Computer Packages Academy.
+- [x] Teacher signup uses name, email/password and verified email, then curriculum-backed active grade and subject dropdowns; WhatsApp and other profile details can be added later. No national ID or TSC number is required.
+- [x] Parent signup uses name, email/password and verified email; optional curriculum/grade/subject dropdowns may capture learner preferences, and child linking can be completed after account creation.
+- [x] Guest signup stays light: name, email/password, verified email, and consent checkbox “I am 18 or older, or my parent/guardian has given consent.” No SMS signup; no grade/pathway/guardian fields; after signup go to Computer Packages Academy.
 
 ## Phase 4 — Public pages, teacher marketplace and WhatsApp
 
@@ -66,7 +67,7 @@ Scope follows `lexifyschool.md` (Master Build Prompt, Version 3), which replaces
 ## Pre-deployment request — interface polish, verification claims and Admin receipts
 
 - [x] Make the Teachers, Academy and Projects catalogue search inputs look professional and consistent, add a clear search icon, retain readable labels and visible keyboard focus, and preserve each page's working GET-based search/filter behavior.
-- [x] Improve the account-role chooser and role signup screens with a polished, responsive background and clear role icons while preserving Supabase email/SMS registration, validation, curriculum selection, metadata persistence, and error/recovery paths.
+- [x] Improve the account-role chooser and role signup screens with a polished, responsive background and clear role icons while preserving Supabase email/password registration with required email verification, validation, curriculum selection, metadata persistence, and error/recovery paths; do not offer SMS/phone-OTP signup.
 - [x] Show an accessible dynamic verification banner only to teachers who are eligible to claim. Let an unverified/revoked teacher submit a free claim for administrator review; show pending/approved/rejected states truthfully, respect reduced-motion settings, and do not imply automatic verification or payment.
 - [x] Give administrators a protected verification-request queue to review and approve/reject teacher claims; update the existing administrator-controlled verification status and record reviewer/time without allowing teachers to set their own status.
 - [x] Verify `/admin/receipts` lets an administrator issue and download a branded receipt after explicitly attesting to a completed off-platform sale, as well as review seller-issued receipts; no payment status, gateway, checkout or payment credential is introduced.

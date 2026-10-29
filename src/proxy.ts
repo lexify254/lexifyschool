@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { APP_ROLES, roleHome, type AppRole } from "@/lib/auth/roles";
 import { getServerSupabaseCookieOptions } from "@/lib/supabase/cookies";
 import { isAccountSuspended } from "@/lib/auth/suspension";
+import { getSupabasePublicConfig } from "@/lib/supabase/config";
 
 function protectedRole(pathname: string): AppRole | null {
   const role = APP_ROLES.find(
@@ -28,11 +29,8 @@ function redirectWithCookies(
 
 export async function proxy(request: NextRequest) {
   const pathRole = protectedRole(request.nextUrl.pathname);
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key =
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) {
+  const config = getSupabasePublicConfig();
+  if (!config) {
     if (!pathRole) return NextResponse.next({ request });
     const params = new URLSearchParams({ error: "auth_unavailable" });
     return NextResponse.redirect(
@@ -43,7 +41,7 @@ export async function proxy(request: NextRequest) {
 
   let response = NextResponse.next({ request });
   const cookieOptions = getServerSupabaseCookieOptions();
-  const supabase = createServerClient(url, key, {
+  const supabase = createServerClient(config.url, config.key, {
     cookieOptions,
     cookies: {
       getAll: () => request.cookies.getAll(),
@@ -60,6 +58,10 @@ export async function proxy(request: NextRequest) {
   if (!pathRole) return response;
 
   if (authError || !authData.user) {
+    if (pathRole === "admin" && request.nextUrl.pathname === "/admin") {
+      const params = new URLSearchParams({ next: "/admin" });
+      return redirectWithCookies(request, `/login?${params}`, response);
+    }
     if (pathRole === "admin")
       return new NextResponse("Not Found", { status: 404 });
     const next = `${request.nextUrl.pathname}${request.nextUrl.search}`;
