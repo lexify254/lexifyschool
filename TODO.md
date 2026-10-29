@@ -57,11 +57,11 @@ Scope follows `lexifyschool.md` (Master Build Prompt, Version 3), which replaces
 
 ## Phase 5 — Seller WhatsApp handoff (payment processing excluded)
 
-- [ ] Class booking, course enrolment inquiry, and project/product purchase actions open the relevant seller's WhatsApp with a clear prefilled item-specific message.
-- [ ] Normalize and validate the seller's WhatsApp number before creating `wa.me` links; if no valid number is configured, show a clear contact-unavailable message instead of a dead button.
-- [ ] Set a verified `WHATSAPP_ADMIN_NUMBER` for project/store inquiries; it is currently unset, so the contact-unavailable state remains until the business supplies a number.
-- [ ] Count each same-origin seller WhatsApp handoff by published item and seller; show totals to administrators and the owning teacher. State clearly that the total measures outbound link clicks only, not unique people, messages, bookings, or purchases; store no clicker name, phone, message text, or raw IP.
-- [ ] After manually confirming an externally arranged sale, let an authorized teacher or administrator create and download a seller-issued receipt; never generate one from a WhatsApp click. Preserve the payment-free scope: do not create an on-site checkout, payment status, payment credentials, commission, payout, or refund workflow.
+- [x] Class booking, course enrolment inquiry, and project/product purchase actions open the relevant seller's WhatsApp with a clear prefilled item-specific message.
+- [x] Normalize and validate the seller's WhatsApp number before creating `wa.me` links; if no valid number is configured, show a clear contact-unavailable message instead of a dead button.
+- [x] Configure `WHATSAPP_ADMIN_NUMBER` for project/store inquiries through secure project settings; the value is present for all environments and passes the app's Kenyan phone-format check. The number itself is not committed to the repository.
+- [x] Count each same-origin seller WhatsApp handoff by published item and seller; show totals to administrators and the owning teacher. State clearly that the total measures outbound link clicks only, not unique people, messages, bookings, or purchases; store no clicker name, phone, message text, or raw IP.
+- [x] After manually confirming an externally arranged sale, let an authorized teacher or administrator create and download a seller-issued receipt; never generate one from a WhatsApp click. Preserve the payment-free scope: do not create an on-site checkout, payment status, payment credentials, commission, payout, or refund workflow.
 
 ## Phase 6 — Student, Parent and Teacher portals; attendance and assessments
 
