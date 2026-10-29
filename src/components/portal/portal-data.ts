@@ -33,6 +33,11 @@ export type DashboardData = {
   children?: Row[];
   teachers?: PortalRecord[];
   teacherStudents?: PortalRecord[];
+  teacherVerification?: {
+    status: string;
+    requestStatus: string | null;
+    submittedAt: string | null;
+  };
 };
 type Row = Record<string, any>;
 const rows = (value: unknown): Row[] =>
@@ -688,6 +693,21 @@ export async function readTeacherDashboard(
   client: SupabaseClient,
   profile: CurrentProfile
 ): Promise<DashboardData> {
+  const [teacherDetails, verificationRequests] = await Promise.all([
+    one(client, "teacher_details", "verification_status", q =>
+      q.eq("profile_id", profile.id)
+    ),
+    list(
+      client,
+      "teacher_verification_requests",
+      "status,submitted_at",
+      q =>
+        q
+          .eq("teacher_id", profile.id)
+          .order("submitted_at", { ascending: false }),
+      1
+    ),
+  ]);
   const classes = await list(
     client,
     "classes",
@@ -911,6 +931,15 @@ export async function readTeacherDashboard(
     records: [],
     attendance,
     teacherStudents: studentRecords,
+    teacherVerification: {
+      status: String(teacherDetails?.verification_status ?? "unverified"),
+      requestStatus: verificationRequests[0]?.status
+        ? String(verificationRequests[0].status)
+        : null,
+      submittedAt: verificationRequests[0]?.submitted_at
+        ? String(verificationRequests[0].submitted_at)
+        : null,
+    },
   };
 }
 
@@ -1016,7 +1045,17 @@ export async function readSection(
   profile: CurrentProfile,
   role: "student" | "parent" | "teacher" | "guest",
   section: string
-): Promise<{ records: PortalRecord[]; note?: string }> {
+): Promise<{
+  records: PortalRecord[];
+  note?: string;
+  teacherVerification?: {
+    status: string;
+    requestStatus: string | null;
+    submittedAt: string | null;
+    reviewNote: string | null;
+    hasTeacherDetails: boolean;
+  };
+}> {
   const id = profile.id;
   const rowsToRecords = (
     items: Row[],
@@ -1663,7 +1702,7 @@ export async function readSection(
       };
     }
     if (section === "badge") {
-      const [details, awards] = await Promise.all([
+      const [details, awards, requests] = await Promise.all([
         one(client, "teacher_details", "verification_status", q =>
           q.eq("profile_id", id)
         ),
@@ -1672,6 +1711,14 @@ export async function readSection(
           "badge_awards",
           "awarded_at,expires_at,revoked_at",
           q => q.eq("teacher_id", id).order("awarded_at", { ascending: false }),
+          20
+        ),
+        list(
+          client,
+          "teacher_verification_requests",
+          "status,submitted_at,review_note",
+          q =>
+            q.eq("teacher_id", id).order("submitted_at", { ascending: false }),
           20
         ),
       ]);
@@ -1688,6 +1735,19 @@ export async function readSection(
             meta: `Awarded ${date(x.awarded_at)}${x.expires_at ? ` · expires ${date(x.expires_at)}` : ""}`,
           })),
         ],
+        teacherVerification: {
+          status: String(details?.verification_status ?? "unverified"),
+          requestStatus: requests[0]?.status
+            ? String(requests[0].status)
+            : null,
+          submittedAt: requests[0]?.submitted_at
+            ? String(requests[0].submitted_at)
+            : null,
+          reviewNote: requests[0]?.review_note
+            ? String(requests[0].review_note)
+            : null,
+          hasTeacherDetails: Boolean(details),
+        },
       };
     }
     if (section === "profile") {

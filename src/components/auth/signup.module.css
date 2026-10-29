@@ -1,0 +1,350 @@
+.signupPage {
+  --signup-navy: #10264a;
+  --signup-blue: #2459a6;
+  --signup-blue-soft: #eaf2ff;
+  --signup-gold: #d6a83d;
+  --signup-ink: #182b47;
+  --signup-muted: #53647b;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 72vh;
+  padding: clamp(34px, 6vw, 76px) 0;
+  color: var(--signup-ink);
+  background:
+    radial-gradient(ellipse at 8% 5%, rgb(73 124 197 / 18%), transparent 38%),
+    radial-gradient(ellipse at 97% 85%, rgb(214 168 61 / 16%), transparent 34%),
+    linear-gradient(135deg, #edf4ff 0%, #f8faff 48%, #fff9eb 100%);
+}
+
+.signupPage::before,
+.signupPage::after {
+  position: absolute;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+}
+
+.signupPage::before {
+  top: -150px;
+  right: -105px;
+  width: min(54vw, 620px);
+  aspect-ratio: 1;
+  border: 1px solid rgb(36 89 166 / 13%);
+  border-radius: 44% 56% 60% 40% / 46% 43% 57% 54%;
+  box-shadow: 0 0 0 30px rgb(36 89 166 / 3%), 0 0 0 74px rgb(36 89 166 / 2%);
+  transform: rotate(-14deg);
+}
+
+.signupPage::after {
+  bottom: -120px;
+  left: -86px;
+  width: min(40vw, 440px);
+  aspect-ratio: 1;
+  border: 1px solid rgb(214 168 61 / 28%);
+  border-radius: 50%;
+  box-shadow: 0 0 0 24px rgb(214 168 61 / 5%), 0 0 0 58px rgb(214 168 61 / 3%);
+}
+
+.signupPage :global(.container) {
+  position: relative;
+  z-index: 1;
+}
+
+.signupPage .roleLayout {
+  grid-template-columns: minmax(0, 1.12fr) minmax(280px, 0.72fr);
+  gap: clamp(20px, 3.2vw, 40px);
+  align-items: stretch;
+}
+
+.signupPage :global(.auth-card) {
+  border: 1px solid rgb(166 185 212 / 68%);
+  border-radius: 26px;
+  background: rgb(255 255 255 / 94%);
+  box-shadow: 0 18px 55px rgb(20 48 88 / 10%), 0 2px 8px rgb(20 48 88 / 4%);
+  backdrop-filter: blur(12px);
+}
+
+.signupPage :global(.auth-card) h1,
+.signupPage :global(.auth-card) h2 {
+  color: var(--signup-navy);
+}
+
+.signupPage :global(.auth-card) h1 {
+  margin-bottom: 12px;
+  font-size: clamp(30px, 4vw, 42px);
+  letter-spacing: -0.045em;
+}
+
+.signupPage :global(.auth-card) > h2 {
+  margin: 3px 0 12px;
+  font-size: clamp(21px, 2.3vw, 27px);
+  letter-spacing: -0.025em;
+}
+
+.signupPage :global(.auth-card__intro) {
+  color: var(--signup-muted);
+  line-height: 1.7;
+}
+
+.signupPage :global(.eyebrow) {
+  color: #8b6411;
+  letter-spacing: 0.13em;
+}
+
+.signupPage :global(.auth-card) a:not(:global(.role-card)) {
+  color: #174f9b;
+  font-weight: 700;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.signupPage :global(.role-grid) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
+  margin-top: 25px;
+}
+
+.signupPage :global(.role-card) {
+  position: relative;
+  display: flex;
+  min-height: 170px;
+  flex-direction: column;
+  align-items: flex-start;
+  overflow: hidden;
+  padding: 20px;
+  border: 1px solid #d3dfef;
+  border-radius: 19px;
+  background: linear-gradient(145deg, #fff 35%, #f5f8fe 100%);
+  box-shadow: 0 4px 14px rgb(21 52 94 / 5%);
+  text-decoration: none;
+  transition: transform 170ms ease, border-color 170ms ease, box-shadow 170ms ease, background-color 170ms ease;
+}
+
+.signupPage :global(.role-card)::after {
+  position: absolute;
+  right: -24px;
+  bottom: -37px;
+  width: 92px;
+  height: 92px;
+  border: 1px solid rgb(214 168 61 / 30%);
+  border-radius: 50%;
+  content: "";
+  pointer-events: none;
+}
+
+.signupPage :global(.role-card):hover {
+  transform: translateY(-3px);
+  border-color: #94afd4;
+  background: linear-gradient(145deg, #fff 25%, #edf4ff 100%);
+  box-shadow: 0 12px 27px rgb(21 52 94 / 12%);
+}
+
+.signupPage :global(.role-card):focus-visible,
+.signupPage :global(.auth-card) a:not(:global(.role-card)):focus-visible,
+.signupPage :global(.auth-card) button:focus-visible,
+.signupPage :global(.auth-card) input:focus-visible,
+.signupPage :global(.auth-card) select:focus-visible,
+.signupPage :global(.auth-card) textarea:focus-visible {
+  outline: 3px solid #174f9b;
+  outline-offset: 3px;
+}
+
+.signupPage :global(.role-card__icon) {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  place-items: center;
+  margin-bottom: 14px;
+  border: 1px solid #d4e2f6;
+  border-radius: 15px;
+  background: #eaf2ff;
+  color: #174f9b;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 90%);
+}
+
+.signupPage :global(.role-card):nth-child(2n) :global(.role-card__icon) {
+  border-color: #efe0b7;
+  background: #fff7df;
+  color: #77550e;
+}
+
+.signupPage :global(.role-card) h2 {
+  margin: 0;
+  color: var(--signup-navy);
+  font-size: 18px;
+  line-height: 1.25;
+}
+
+.signupPage :global(.role-card) p {
+  margin: 6px 0 0;
+  color: var(--signup-muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.signupPanel {
+  width: min(100%, 980px);
+  margin: 0 auto;
+  padding: clamp(22px, 4vw, 38px) !important;
+}
+
+.signupPanel :global(.form-grid) {
+  gap: 18px;
+}
+
+.signupPanel :global(.form-field) {
+  gap: 8px;
+}
+
+.signupPanel :global(.form-field) label,
+.signupPanel :global(.form-field) legend,
+.signupPanel :global(fieldset) legend {
+  color: var(--signup-navy);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.signupPanel :global(.form-field) input,
+.signupPanel :global(.form-field) select,
+.signupPanel :global(.form-field) textarea {
+  border-color: #bdcde1;
+  border-radius: 12px;
+  background-color: #fff;
+  color: #172944;
+}
+
+.signupPanel :global(.form-field) input::placeholder {
+  color: #66778d;
+  opacity: 1;
+}
+
+.signupPanel :global(.form-field) small {
+  color: #53647b;
+  line-height: 1.5;
+}
+
+.signupPanel :global(.form-divider) {
+  height: 2px;
+  background: linear-gradient(90deg, var(--signup-gold), #d9e4f2 55%, transparent);
+}
+
+.signupPanel :global(.form-check) {
+  color: #394c65;
+  line-height: 1.55;
+}
+
+.signupPanel :global(.form-check) input {
+  accent-color: #174f9b;
+}
+
+.signupPanel :global(.button--primary) {
+  min-height: 50px;
+  border-color: #173d74;
+  border-radius: 13px;
+  background: linear-gradient(110deg, #143967, #2459a6);
+  box-shadow: 0 6px 16px rgb(20 57 103 / 18%);
+}
+
+.signupPanel :global(.button--primary):hover:not(:disabled) {
+  background: linear-gradient(110deg, #0e2c53, #1d4f94);
+}
+
+@media (max-width: 900px) {
+  .signupPage .roleLayout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+}
+
+@media (max-width: 560px) {
+  .signupPage {
+    padding: 25px 0 38px;
+  }
+
+  .signupPage :global(.auth-card) {
+    padding: 22px;
+    border-radius: 21px;
+  }
+
+  .signupPage :global(.role-grid) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 11px;
+    margin-top: 20px;
+  }
+
+  .signupPage :global(.role-card) {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 46px minmax(0, 1fr);
+    column-gap: 13px;
+    padding: 15px;
+  }
+
+  .signupPage :global(.role-card__icon) {
+    grid-row: span 2;
+    width: 44px;
+    height: 44px;
+    margin: 0;
+  }
+
+  .signupPage :global(.role-card) p {
+    margin-top: 3px;
+  }
+
+  .signupPanel :global(.form-grid--two) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .signupPage :global(.role-card),
+  .signupPanel :global(.button--primary) {
+    scroll-behavior: auto;
+    transition: none;
+  }
+
+  .signupPage :global(.role-card):hover {
+    transform: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .signupPage :global(.auth-card) {
+    border: 2px solid #243c5e;
+    background: #fff;
+    box-shadow: none;
+  }
+
+  .signupPage :global(.role-card) {
+    border: 2px solid #334b6b;
+    background: #fff;
+    box-shadow: none;
+  }
+
+  .signupPage :global(.auth-card__intro),
+  .signupPage :global(.role-card) p,
+  .signupPanel :global(.form-field) small {
+    color: #273950;
+  }
+}
+
+@media (forced-colors: active) {
+  .signupPage :global(.auth-card),
+  .signupPage :global(.role-card),
+  .signupPage :global(.role-card__icon) {
+    border: 1px solid CanvasText;
+    background: Canvas;
+    color: CanvasText;
+    box-shadow: none;
+  }
+
+  .signupPage :global(.role-card):focus-visible,
+  .signupPage :global(.auth-card) a:focus-visible,
+  .signupPage :global(.auth-card) button:focus-visible,
+  .signupPanel :global(.form-field) input:focus-visible,
+  .signupPanel :global(.form-field) select:focus-visible {
+    outline: 3px solid Highlight;
+  }
+}

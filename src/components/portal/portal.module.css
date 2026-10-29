@@ -44,3 +44,25 @@
 .statNote { display: block; margin-top: 8px; color: var(--muted); font-size: 11px; line-height: 1.4; }
 @media (max-width: 860px) { .dashboardGrid, .childColumns { grid-template-columns: 1fr; } }
 @media (max-width: 760px) { .scoreList li { grid-template-columns: 1fr auto; } .scoreList .bar { grid-column: 1 / -1; grid-row: auto; } .strength > div { display: grid; } .strength dd { text-align: left; } }
+.verificationBanner { display: flex; align-items: center; justify-content: space-between; gap: 22px; margin: 18px 0; padding: 21px 24px; border: 1px solid #c9d9ef; border-left: 5px solid var(--blue-bright); border-radius: 16px; background: linear-gradient(110deg, #eef5ff, #fff); }
+.verificationBanner h2 { margin: 5px 0; color: var(--navy); font-size: clamp(18px, 2.3vw, 23px); line-height: 1.2; }
+.verificationBanner p { margin: 0; color: var(--muted); font-size: 13px; }
+.verificationBannerGood { border-color: #b4dfc4; border-left-color: #16834a; background: #f0fbf4; }
+.verificationBannerPending { border-color: #ead49c; border-left-color: #bd7b10; background: #fffaf0; }
+.verificationStatus { display: grid; gap: 12px; margin-top: 18px; }
+.verificationStatus h2 { margin: 0; color: var(--navy); font-size: 19px; }
+.verificationStatus > p { margin: 0; color: var(--muted); }
+.verificationForm { margin-top: 14px; padding: 20px; border-color: #dce6f1; background: #fbfdff; }
+.verificationForm h2 { margin: 6px 0; color: var(--navy); font-size: 19px; }
+.verificationForm > p { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
+.verificationForm form { display: grid; gap: 8px; }
+.verificationForm label { color: var(--navy); font-size: 13px; font-weight: 750; }
+.verificationForm textarea { width: 100%; min-height: 100px; padding: 10px 12px; border: 1px solid #cdd9e8; border-radius: 12px; color: var(--ink); background: white; resize: vertical; }
+.verificationForm small { color: var(--muted); font-size: 12px; }
+.verificationForm button { width: fit-content; margin-top: 5px; }
+.verificationForm [role="status"] { margin: 6px 0 0; }
+.verificationReviewNote { padding: 12px 14px; border: 1px solid #f0d89a; border-radius: 11px; background: #fff8e6; color: #594616; }
+.verificationReviewNote strong { display: block; }
+.verificationReviewNote p { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 760px) { .verificationBanner { align-items: flex-start; flex-direction: column; } }
+@media (prefers-reduced-motion: reduce) { .verificationBanner .button, .verificationForm button { transition: none; } }

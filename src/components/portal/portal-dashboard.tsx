@@ -273,9 +273,51 @@ export async function PortalDashboard({
 
   if (role === "teacher") {
     const data = await readTeacherDashboard(client, profile);
+    const verification = data.teacherVerification;
+    const underReview =
+      verification?.requestStatus === "pending" ||
+      verification?.status === "pending";
+    const verified = verification?.status === "verified";
     return (
       <>
         {heading}
+        {verification ? (
+          <section
+            className={`${styles.verificationBanner} ${verified ? styles.verificationBannerGood : underReview ? styles.verificationBannerPending : ""}`}
+            role="status"
+            aria-labelledby="teacher-verification-banner-title"
+          >
+            <div>
+              <span className="section-kicker">Teacher verification</span>
+              <h2 id="teacher-verification-banner-title">
+                {verified
+                  ? "Your teacher profile is verified"
+                  : underReview
+                    ? "Your claim is under Admin review"
+                    : "Request a teacher verification review"}
+              </h2>
+              <p>
+                {verified
+                  ? "Your profile has been verified by an Admin."
+                  : underReview
+                    ? `Your request${verification.submittedAt ? `, submitted ${new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(verification.submittedAt))},` : ""} is awaiting an Admin decision. Verification is not automatic.`
+                    : verification.requestStatus === "rejected"
+                      ? "Your previous claim was rejected. You may request another review; verification is free and requires an Admin decision."
+                      : verification.status === "revoked"
+                        ? "Your verification is revoked. You may request a new Admin review; verification is free and never automatic."
+                        : "Verification is free and requires an Admin review. Submitting a request does not verify your profile automatically."}
+              </p>
+            </div>
+            {!verified && !underReview ? (
+              <Link
+                className="button button--blue button--small"
+                href="/teacher/badge"
+              >
+                Open verification request
+              </Link>
+            ) : null}
+          </section>
+        ) : null}
         <StatGrid stats={data.stats} />
         <div className={styles.dashboardGrid}>
           <Panel

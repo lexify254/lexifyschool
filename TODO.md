@@ -63,6 +63,15 @@ Scope follows `lexifyschool.md` (Master Build Prompt, Version 3), which replaces
 - [x] Count each same-origin seller WhatsApp handoff by published item and seller; show totals to administrators and the owning teacher. State clearly that the total measures outbound link clicks only, not unique people, messages, bookings, or purchases; store no clicker name, phone, message text, or raw IP.
 - [x] After manually confirming an externally arranged sale, let an authorized teacher or administrator create and download a seller-issued receipt; never generate one from a WhatsApp click. Preserve the payment-free scope: do not create an on-site checkout, payment status, payment credentials, commission, payout, or refund workflow.
 
+## Pre-deployment request — interface polish, verification claims and Admin receipts
+
+- [x] Make the Teachers, Academy and Projects catalogue search inputs look professional and consistent, add a clear search icon, retain readable labels and visible keyboard focus, and preserve each page's working GET-based search/filter behavior.
+- [x] Improve the account-role chooser and role signup screens with a polished, responsive background and clear role icons while preserving Supabase email/SMS registration, validation, curriculum selection, metadata persistence, and error/recovery paths.
+- [x] Show an accessible dynamic verification banner only to teachers who are eligible to claim. Let an unverified/revoked teacher submit a free claim for administrator review; show pending/approved/rejected states truthfully, respect reduced-motion settings, and do not imply automatic verification or payment.
+- [x] Give administrators a protected verification-request queue to review and approve/reject teacher claims; update the existing administrator-controlled verification status and record reviewer/time without allowing teachers to set their own status.
+- [x] Verify `/admin/receipts` lets an administrator issue and download a branded receipt after explicitly attesting to a completed off-platform sale, as well as review seller-issued receipts; no payment status, gateway, checkout or payment credential is introduced.
+- [x] Preserve administrator authorization when an administrator changes their verified Auth email; authorization must remain bound to the existing Auth user ID and admin role, not to a public email string. Admin must remain unavailable as a public signup role.
+
 ## Phase 6 — Student, Parent and Teacher portals; attendance and assessments
 
 - [ ] Student dashboard shows subject-by-subject performance over time, averages, strongest/weakest subjects, goals, attendance (attended/missed/percentage/calendar), programs, teacher/schedule/pricing basis/lessons remaining/expiry, illustrated subject cards and PDF progress report.

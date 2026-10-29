@@ -4,7 +4,9 @@ import "./admin.css";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function AdminLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   await requireAdmin();
 
   return (
@@ -20,6 +22,7 @@ export default async function AdminLayout({ children }: Readonly<{ children: Rea
             <Link href="/admin/content">Content</Link>
             <Link href="/admin/curriculum">Curriculum</Link>
             <Link href="/admin/users">Users</Link>
+            <Link href="/admin/verification">Teacher verification</Link>
             <Link href="/admin/receipts">Receipts</Link>
           </nav>
         </header>

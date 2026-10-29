@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Compass, GraduationCap, Presentation, UsersRound } from "lucide-react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { normalizeKenyanPhone } from "@/lib/whatsapp/links";
 import { SubjectCard } from "@/components/subject-card";
+import styles from "./signup.module.css";
 import {
   classifyCurriculumSystem,
   validateEightFourFourSelection,
@@ -23,6 +25,7 @@ const roleDestinations: Record<Role, string> = {
   student: "/student/dashboard", parent: "/parent/dashboard", teacher: "/teacher/dashboard", guest: "/guest/dashboard",
 };
 const roleLabels: Record<Role, string> = { student: "Student", parent: "Parent", teacher: "Teacher", guest: "Guest" };
+const roleIcons = { student: GraduationCap, parent: UsersRound, teacher: Presentation, guest: Compass };
 const blankCatalogue: Catalogue = { systems: [], grades: [], pathways: [], tracks: [], areas: [], links: [], groups: [], rules: [] };
 const plainError = (error: unknown, fallback: string) => {
   const text = error instanceof Error ? error.message : typeof error === "string" ? error : "";
@@ -43,7 +46,7 @@ export function RoleChooser({ issue }: { issue?: string }) {
     teacher_subjects_pending: "Your email was verified, but teaching subjects or teacher details were not saved. Sign in and complete your profile.",
     parent_link_pending: "Your email was verified, but the learner-link request was not saved. Sign in and submit the request again.",
   };
-  return <main className="auth-page"><div className="container auth-layout"><section className="auth-card"><p className="eyebrow">GET STARTED</p><h1>Create your account</h1><p className="auth-card__intro">Choose how you’ll use Lexify School. You can’t register as an administrator.</p>{issue && recoveryMessages[issue] ? <div className="form-error" role="alert">{recoveryMessages[issue]} <Link href="/login">Sign in</Link></div> : null}<div className="role-grid">{(Object.keys(roleLabels) as Role[]).map((role) => <Link className="role-card" key={role} href={`/signup/${role}`}><span className="role-card__icon" aria-hidden="true">{role === "student" ? "S" : role === "parent" ? "P" : role === "teacher" ? "T" : "G"}</span><h2>{roleLabels[role]}</h2><p>{descriptions[role]}</p></Link>)}</div><p className="auth-card__intro" style={{ marginTop: 22 }}>Already have an account? <Link href="/login">Sign in</Link></p></section><aside className="auth-card"><h2>Safe, supported learning</h2><p className="auth-card__intro">We only ask for the information needed to set up your account. Learner subject choices are checked against the active catalogue and curriculum rules.</p></aside></div></main>;
+  return <main className={`auth-page ${styles.signupPage}`}><div className={`container auth-layout ${styles.roleLayout}`}><section className="auth-card"><p className="eyebrow">GET STARTED</p><h1>Create your account</h1><p className="auth-card__intro">Choose how you’ll use Lexify School. You can’t register as an administrator.</p>{issue && recoveryMessages[issue] ? <div className="form-error" role="alert">{recoveryMessages[issue]} <Link href="/login">Sign in</Link></div> : null}<div className="role-grid">{(Object.keys(roleLabels) as Role[]).map((role) => { const Icon = roleIcons[role]; return <Link className="role-card" key={role} href={`/signup/${role}`}><span className="role-card__icon" aria-hidden="true"><Icon size={22} strokeWidth={1.8} /></span><h2>{roleLabels[role]}</h2><p>{descriptions[role]}</p></Link>; })}</div><p className="auth-card__intro" style={{ marginTop: 22 }}>Already have an account? <Link href="/login">Sign in</Link></p></section><aside className="auth-card"><h2>Safe, supported learning</h2><p className="auth-card__intro">We only ask for the information needed to set up your account. Learner subject choices are checked against the active catalogue and curriculum rules.</p></aside></div></main>;
 }
 
 async function loadCatalogue(client: NonNullable<ReturnType<typeof getSupabaseBrowserClient>>): Promise<Catalogue> {
@@ -387,7 +390,7 @@ export function SignupForm({ role: requestedRole }: { role: string }) {
 
   const chooserDisabled = loadingCatalogue || Boolean(catalogueError) || !gradeId;
   const rolesTitle = role === "student" ? "Student account" : `${roleLabels[role]} account`;
-  return <main className="auth-page"><div className="container"><section className="auth-card" style={{ maxWidth: 850, margin: "0 auto" }}>
+  return <main className={`auth-page ${styles.signupPage}`}><div className="container"><section className={`auth-card ${styles.signupPanel}`}>
     <p className="eyebrow">CREATE ACCOUNT · {roleLabels[role].toUpperCase()}</p><h1>{rolesTitle}</h1><p className="auth-card__intro">Enter your details. Required fields are marked; your account is not created until Supabase confirms signup.</p>
     {catalogueError && (role === "student" || role === "teacher") ? <div className="form-error" role="alert">{catalogueError} We will not accept curriculum selections without the live catalogue.</div> : null}
     {error && <div className="form-error" role="alert">{error}{recoverable ? <> <Link href="/login">Go to sign in</Link></> : null}</div>}{notice && <div className="form-success" role="status">{notice}</div>}

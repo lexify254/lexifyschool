@@ -9,6 +9,7 @@ import type { CurrentProfile } from "@/lib/auth/guards";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { readSection } from "./portal-data";
 import styles from "./portal.module.css";
+import { TeacherVerificationForm } from "./teacher-verification-form";
 
 const sections: Record<
   PortalRole,
@@ -178,6 +179,47 @@ export async function PortalSection({
         emptyTitle={`No ${config.title.toLowerCase()} records yet`}
         emptyMessage="No records are currently visible to your signed-in account for this section. New items appear when they are available under your account access."
       />
+      {role === "teacher" && section === "badge" && data.teacherVerification ? (
+        <section
+          className={`portal-panel ${styles.verificationStatus}`}
+          aria-labelledby="verification-claim-status-heading"
+        >
+          <h2 id="verification-claim-status-heading">Verification claim</h2>
+          {data.teacherVerification.status === "verified" ? (
+            <p role="status">
+              Your teacher profile is verified. No further claim is needed.
+            </p>
+          ) : data.teacherVerification.requestStatus === "pending" ||
+            data.teacherVerification.status === "pending" ? (
+            <p role="status">
+              Your request is under Admin review. Verification is not automatic;
+              you will see the recorded status here after review.
+            </p>
+          ) : (
+            <>
+              {data.teacherVerification.requestStatus === "rejected" ? (
+                <div className={styles.verificationReviewNote}>
+                  <strong>Latest request: rejected</strong>
+                  {data.teacherVerification.reviewNote ? (
+                    <p>{data.teacherVerification.reviewNote}</p>
+                  ) : (
+                    <p>No Admin note was provided.</p>
+                  )}
+                </div>
+              ) : null}
+              {data.teacherVerification.hasTeacherDetails ? (
+                <TeacherVerificationForm />
+              ) : (
+                <p role="status">
+                  A teacher profile record is required before you can submit a
+                  verification claim. Complete your teacher profile, then return
+                  here.
+                </p>
+              )}
+            </>
+          )}
+        </section>
+      ) : null}
       {role === "student" && section === "community" ? (
         <div className={`portal-panel ${styles.actionPanel}`}>
           <h2>Safety & consent</h2>

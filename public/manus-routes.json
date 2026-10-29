@@ -11,6 +11,7 @@
     { "path": "/admin/curriculum", "title": "Curriculum Manager" },
     { "path": "/admin/receipts", "title": "Seller Receipts" },
     { "path": "/admin/users", "title": "User Management" },
+    { "path": "/admin/verification", "title": "Teacher Verification Review" },
     { "path": "/child-safety", "title": "Child Safety" },
     { "path": "/community", "title": "Student Community" },
     { "path": "/contact", "title": "Contact" },

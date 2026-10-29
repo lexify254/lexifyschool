@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BookOpen, Clock3, MonitorPlay } from "lucide-react";
+import SearchField from "@/components/search/SearchField";
 import {
   listPublishedAcademyCourses,
   type AcademyFilters,
@@ -83,16 +84,15 @@ export default async function AcademyPage({
             method="get"
             aria-label="Search and filter Academy courses"
           >
-            <label className="filter-control">
-              <span>Search courses</span>
-              <input
-                name="q"
-                type="search"
-                defaultValue={filters.q}
-                maxLength={80}
-                placeholder="Title or course description"
-              />
-            </label>
+            <SearchField
+              id="academy-search"
+              name="q"
+              label="Search courses"
+              defaultValue={filters.q}
+              maxLength={80}
+              placeholder="Title or course description"
+              className="filter-control"
+            />
             <label className="filter-control">
               <span>Course level</span>
               <select name="level" defaultValue={filters.level}>

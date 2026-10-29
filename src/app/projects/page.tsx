@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import SearchField from "@/components/search/SearchField";
 import { listPublishedProducts } from "@/lib/data/public-catalogue";
 import {
   filterAndSortProjects,
@@ -61,16 +62,15 @@ export default async function ProjectsPage({ searchParams }: Props) {
             method="get"
             aria-label="Filter digital resources"
           >
-            <label className={styles.filterControl}>
-              Search
-              <input
-                name="q"
-                type="search"
-                defaultValue={filters.q}
-                placeholder="Title, description, software or file type"
-                maxLength={80}
-              />
-            </label>
+            <SearchField
+              id="projects-search"
+              name="q"
+              label="Search"
+              defaultValue={filters.q}
+              placeholder="Title, description, software or file type"
+              maxLength={80}
+              className={styles.filterControl}
+            />
             <label className={styles.filterControl}>
               Software
               <input

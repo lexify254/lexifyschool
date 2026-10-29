@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import SearchField from "@/components/search/SearchField";
 import {
   getTeacherFilterOptions,
   listPublicTeachers,
@@ -88,15 +89,15 @@ export default async function TeachersPage({
             method="get"
             aria-label="Filter teachers"
           >
-            <label className="filter-control">
-              <span>Search teacher name</span>
-              <input
-                name="q"
-                defaultValue={filters.q ?? ""}
-                placeholder="Search by public profile name"
-                maxLength={80}
-              />
-            </label>
+            <SearchField
+              id="teacher-search"
+              name="q"
+              label="Search teacher name"
+              defaultValue={filters.q ?? ""}
+              placeholder="Search by public profile name"
+              maxLength={80}
+              className="filter-control"
+            />
             <label className="filter-control">
               <span>Learning area</span>
               <select name="subject" defaultValue={filters.subjectId ?? ""}>
