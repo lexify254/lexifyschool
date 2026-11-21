@@ -1,4 +1,5 @@
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { currentCurriculumDate, isCurriculumAvailable } from "@/lib/curriculum/availability";
 
 type Row = Record<string, unknown>;
 
@@ -200,5 +201,9 @@ export async function getPublicCurriculum() {
   reportReadError("education systems", systemsResult.error);
   reportReadError("grades", gradesResult.error);
   reportReadError("learning areas", areasResult.error);
-  return { systems: systemsResult.data ?? [], grades: gradesResult.data ?? [], areas: areasResult.data ?? [] };
+  const today = currentCurriculumDate();
+  const systems = (systemsResult.data ?? []).filter((item) => isCurriculumAvailable(item, today));
+  const systemIds = new Set(systems.map((item) => item.id));
+  const grades = (gradesResult.data ?? []).filter((item) => systemIds.has(item.system_id) && isCurriculumAvailable(item, today));
+  return { systems, grades, areas: areasResult.data ?? [] };
 }

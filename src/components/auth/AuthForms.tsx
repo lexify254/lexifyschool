@@ -7,6 +7,7 @@ import { Compass, GraduationCap, Presentation, UsersRound } from "lucide-react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { normalizeKenyanPhone } from "@/lib/whatsapp/links";
 import styles from "./signup.module.css";
+import { currentCurriculumDate, isCurriculumAvailable } from "@/lib/curriculum/availability";
 import {
   classifyCurriculumSystem,
   validateEightFourFourSelection,
@@ -48,9 +49,10 @@ export function RoleChooser({ issue }: { issue?: string }) {
 }
 
 async function loadCatalogue(client: NonNullable<ReturnType<typeof getSupabaseBrowserClient>>): Promise<Catalogue> {
+  const today = currentCurriculumDate();
   const [systems, grades, pathways, tracks, areas, links, groups, rules] = await Promise.all([
-    client.from("education_systems").select("id,code,name,is_active").eq("is_active", true).order("name").limit(30),
-    client.from("grades").select("id,system_id,code,name,level_order,is_active").order("level_order").limit(100),
+    client.from("education_systems").select("id,code,name,is_active,starts_on,ends_on").eq("is_active", true).order("name").limit(30),
+    client.from("grades").select("id,system_id,code,name,level_order,is_active,starts_on,ends_on").order("level_order").limit(100),
     client.from("pathways").select("id,system_id,code,name,is_active,sort_order").eq("is_active", true).order("sort_order").limit(30),
     client.from("pathway_tracks").select("id,pathway_id,code,name,is_active,sort_order").eq("is_active", true).order("sort_order").limit(60),
     client.from("learning_areas").select("id,system_id,code,kcse_code,title,description,is_core,is_examinable,is_active,icon_name,accent_color,is_optional_activity,restriction_code,pathway_id,track_id,group_id,parent_area_id,sort_order").eq("is_active", true).order("sort_order").limit(500),
@@ -60,8 +62,11 @@ async function loadCatalogue(client: NonNullable<ReturnType<typeof getSupabaseBr
   ]);
   const failed = [systems, grades, pathways, tracks, areas, links, groups, rules].find((result) => result.error);
   if (failed?.error) throw new Error("We could not load the live curriculum catalogue. Please try again later.");
-  if (!systems.data?.length || !grades.data?.length || !areas.data?.length || !links.data?.length) throw new Error("The curriculum catalogue is not ready. Please try again later.");
-  return { systems: systems.data, grades: grades.data, pathways: pathways.data ?? [], tracks: tracks.data ?? [], areas: areas.data, links: links.data, groups: groups.data ?? [], rules: rules.data ?? [] };
+  const availableSystems = (systems.data ?? []).filter((item) => isCurriculumAvailable(item, today));
+  const availableSystemIds = new Set(availableSystems.map((item) => item.id));
+  const availableGrades = (grades.data ?? []).filter((item) => availableSystemIds.has(item.system_id) && isCurriculumAvailable(item, today));
+  if (!availableSystems.length || !availableGrades.length || !areas.data?.length || !links.data?.length) throw new Error("The curriculum catalogue is not ready. Please try again later.");
+  return { systems: availableSystems, grades: availableGrades, pathways: pathways.data ?? [], tracks: tracks.data ?? [], areas: areas.data, links: links.data, groups: groups.data ?? [], rules: rules.data ?? [] };
 }
 
 function subjectsForGrade(catalogue: Catalogue, gradeId: string): Row[] {
