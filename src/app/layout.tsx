@@ -15,8 +15,8 @@ export const metadata: Metadata = {
     "Find curriculum-aligned tutoring, learn computer packages, and discover practical learning resources with Lexify School in Kenya.",
   applicationName: "Lexify School",
   icons: {
-    icon: [{ url: "/lexify-school-seal-round.png", type: "image/png" }],
-    apple: [{ url: "/lexify-school-seal-round.png", type: "image/png" }],
+    icon: [{ url: "/lexify-school-seal.png", type: "image/png" }],
+    apple: [{ url: "/lexify-school-seal.png", type: "image/png" }],
   },
   openGraph: {
     type: "website",

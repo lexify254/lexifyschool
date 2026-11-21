@@ -10,11 +10,10 @@ Scope follows `lexifyschool.md` (Master Build Prompt, Version 3), which replaces
 
 ## Current request — school seal and Vercel deployment readiness
 
-- [x] Use the supplied Lexify School seal as a circular shared site logo and browser icon, retain the existing text wordmark, and use the circular seal in seller-reported PDF receipts and platform branding.
+- [x] Use the supplied Lexify School seal as the shared site logo and browser icon, retain the existing text wordmark, and use the seal in seller-reported PDF receipts and platform branding.
 - [x] Fix the missing Vercel homepage background by serving the hero image from the committed `public/` directory instead of a Manus-only storage URL; keep the image compressed and its free-use source documented.
 - [ ] Activate and verify every feature in the established site scope before describing the whole platform as launch-ready. The current codebase still has open outcomes in Phases 1–13 below; preserve those as incomplete and do not add on-site payments, checkout or payment credentials.
 - [ ] Complete Vercel-specific setup outside this repository: set the required environment values in Vercel and configure the Supabase HTTPS site URL/redirect allowlist for the actual deployment domain.
-- [ ] With the Lexify School Supabase project accessible, verify that email-verified account creation works and that the live curriculum, grade, subject and teacher listings can be browsed; do not fabricate successful accounts or catalogue data while the project is inactive.
 
 ## Delivered milestone — landing page and role routes
 

@@ -40,7 +40,7 @@ img { max-width: 100%; }
 .site-header { position: relative; z-index: 20; background: var(--navy-deep); color: #fff; }
 .site-header__inner { width: min(1200px, calc(100% - 48px)); min-height: 82px; margin: 0 auto; display: flex; align-items: center; gap: 32px; }
 .brand { display: inline-flex; align-items: center; gap: 10px; color: white; flex: 0 0 auto; }
-.brand__mark { width: 49px; height: 49px; aspect-ratio: 1; border-radius: 50%; object-fit: cover; overflow: hidden; flex: 0 0 49px; }
+.brand__mark { width: 49px; height: 49px; object-fit: contain; }
 .brand__wordmark { display: flex; flex-direction: column; line-height: 1.03; letter-spacing: -0.04em; }
 .brand__wordmark strong { font-size: 24px; font-weight: 800; }
 .brand__wordmark span { font-size: 14px; font-weight: 600; opacity: 0.9; letter-spacing: 0.01em; }

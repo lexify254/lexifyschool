@@ -97,6 +97,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|manus-routes.json|lexify-mark.svg|lexify-school-seal.png|lexify-school-seal-round.png|lexify-learning-hero.webp).*)",
+    "/((?!_next/static|_next/image|favicon.ico|manus-routes.json|lexify-mark.svg|lexify-school-seal.png|lexify-learning-hero.webp).*)",
   ],
 };
