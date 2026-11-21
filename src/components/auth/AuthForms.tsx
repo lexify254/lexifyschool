@@ -90,7 +90,8 @@ function curriculumRecords(rows: Row[], catalogue: Catalogue): CurriculumSubject
       pathway: row.pathway_id ? pathById.get(row.pathway_id) : undefined,
       track: row.track_id ? trackById.get(row.track_id) : undefined,
       isCore: row.is_core, isReligiousEducation: /\b(CRE|IRE|HRE|religious education)\b/i.test(`${row.code} ${title}`),
-      isKenyaSignLanguage: /sign language|\bksl\b/i.test(`${row.code} ${title}`),
+      isKenyaSignLanguage: row.restriction_code === "DEAF_LEARNER_ONLY" ||
+        (/sign language|\bksl\b/i.test(`${row.code} ${title}`) && !/kiswahili/i.test(`${row.code} ${title}`)),
       requiresDeafLearner: row.restriction_code === "DEAF_LEARNER_ONLY",
       overlapsWith: [],
     } satisfies CurriculumSubject;
@@ -156,7 +157,7 @@ export function SignupForm({ role: requestedRole }: { role: string }) {
   const validation = useMemo(() => {
     if (role !== "student" || !grade || !gradeRows.length) return null;
     if (junior) {
-      const selected = [...selectedAreas, ...(languageId ? [languageId] : []), ...(religionId ? [religionId] : []), ...optionalAreas];
+      const selected = [...new Set([...selectedAreas, ...(languageId ? [languageId] : []), ...(religionId ? [religionId] : []), ...optionalAreas])];
       return validateJuniorSelection({ grade: Number(grade.level_order), catalog: currentRecords, selected, config: undefined });
     }
     if (senior) return validateSeniorSelection({ grade: Number(grade.level_order), catalog: currentRecords, selected: selectedAreas, pathway: pathway?.name as SeniorPathway | undefined, track: tracks.find((item) => item.id === trackId)?.name, config: ruleConfig(catalogue, currentRecords, systemId || system?.id || "", gradeId) });
@@ -172,6 +173,8 @@ export function SignupForm({ role: requestedRole }: { role: string }) {
     if (selectedGrade && classifyCurriculumSystem(catalogue.systems.find((item) => item.id === selectedGrade.system_id) ?? {}, selectedGrade) === "junior") {
       const required = catalogue.links.filter((item) => item.grade_id === id && item.role === "core" && item.is_required).map((item) => item.learning_area_id);
       setSelectedAreas(catalogue.areas.filter((item) => required.includes(item.id) && !item.parent_area_id && !item.is_optional_activity).map((item) => item.id));
+      const kiswahiliArea = catalogue.areas.find((item) => required.includes(item.id) && !item.parent_area_id && /kiswahili/i.test(`${item.code} ${item.title}`));
+      setLanguageId(kiswahiliArea?.id ?? "");
     } else setSelectedAreas([]);
   }
   function selectedIds(): string[] {
@@ -179,7 +182,7 @@ export function SignupForm({ role: requestedRole }: { role: string }) {
       const result = validateSeniorSelection({ grade: Number(grade.level_order), catalog: currentRecords, selected: selectedAreas, pathway: pathway?.name as SeniorPathway | undefined, track: tracks.find((item) => item.id === trackId)?.name, config: ruleConfig(catalogue, currentRecords, systemId || system?.id || "", gradeId) });
       return result.subjectIds.map(String);
     }
-    return role === "student" ? junior ? [...selectedAreas, ...(languageId ? [languageId] : []), ...(religionId ? [religionId] : []), ...optionalAreas] : [...selectedAreas, ...optionalAreas] : [];
+    return role === "student" ? junior ? [...new Set([...selectedAreas, ...(languageId ? [languageId] : []), ...(religionId ? [religionId] : []), ...optionalAreas])] : [...selectedAreas, ...optionalAreas] : [];
   }
 
   async function finalizeAuthenticatedUser(userId: string, userRole: Role, subjectPayload?: { gradeId: string; ids: string[]; pathwayId?: string; trackId?: string }, signupMetadata: Row = {}) {
@@ -354,7 +357,10 @@ function JuniorChoices({ catalogue, gradeId, rows, selected, optional, religionI
   const religionParent = (row: Row | undefined) => /religious education|religion/.test(parentLabel(row));
   const languageParent = (row: Row | undefined) => /language|kiswahili/.test(parentLabel(row)) && !religionParent(row);
   const religion = rows.filter((row) => row.parent_area_id && religionParent(areaById.get(row.parent_area_id)) && /\b(CRE|IRE|HRE)\b|religious education/i.test(`${row.code} ${row.title}`));
-  const languageChoices = rows.filter((row) => row.parent_area_id && languageParent(areaById.get(row.parent_area_id)) && /kiswahili|sign language|\bksl\b/i.test(`${row.code} ${row.title}`));
+  const languageChoices = rows.filter((row) =>
+    (!row.parent_area_id && required.includes(row.id) && /kiswahili/i.test(`${row.code} ${row.title}`)) ||
+    (row.parent_area_id && languageParent(areaById.get(row.parent_area_id)) && /kiswahili|sign language|\bksl\b/i.test(`${row.code} ${row.title}`)),
+  );
   const extras = rows.filter((row) => {
     const link = catalogue.links.find((item) => item.grade_id === gradeId && item.learning_area_id === row.id);
     return row.restriction_code === "TUTORING_ONLY" || row.is_optional_activity || link?.role === "optional" || link?.role === "elective";
@@ -375,8 +381,10 @@ function JuniorChoices({ catalogue, gradeId, rows, selected, optional, religionI
           <select id="juniorLanguage" value={languageId} required onChange={(event) => onLanguage(event.target.value)}>
             <option value="">Choose a language</option>
             {languageChoices.map((row) => {
-              const restricted = row.restriction_code === "DEAF_LEARNER_ONLY" || /sign language|\bksl\b/i.test(`${row.code} ${row.title}`);
-              return <option key={row.id} value={row.id} disabled={restricted}>{row.title}{restricted ? " (requires administrator authorization)" : ""}</option>;
+              const signLanguageLabel = /sign language|\bksl\b/i.test(`${row.code} ${row.title}`) && !/kiswahili/i.test(`${row.code} ${row.title}`);
+              const restricted = row.restriction_code === "DEAF_LEARNER_ONLY" || signLanguageLabel;
+              const label = !restricted && /kiswahili/i.test(row.title) ? "Kiswahili" : row.title;
+              return <option key={row.id} value={row.id} disabled={restricted}>{label}{restricted ? " (requires administrator authorization)" : ""}</option>;
             })}
           </select>
           {!languageChoices.length && <small>The active grade has no language options in the live catalogue.</small>}
