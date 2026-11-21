@@ -446,7 +446,7 @@ export async function createSellerReceiptPdf(
     errorCorrectionLevel: "M",
   });
   const logoPng = await readFile(
-    join(process.cwd(), "public", "lexify-school-seal.png")
+    join(process.cwd(), "public", "lexify-school-seal-round.png")
   );
 
   return renderPdf(qrPng, logoPng, {
