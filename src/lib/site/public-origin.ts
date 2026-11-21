@@ -1,6 +1,6 @@
 import "server-only";
 
-const FALLBACK_PUBLIC_ORIGIN = "https://lexifyschool-grfxddmm.manus.space";
+const FALLBACK_PUBLIC_ORIGIN = "https://lexifyschool.vercel.app";
 
 export function getPublicSiteOrigin(): string {
   const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim();

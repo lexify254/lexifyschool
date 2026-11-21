@@ -42,8 +42,8 @@ export default function HomePage() {
       <section className="hero" aria-labelledby="home-title">
         <Image
           className="hero__background-image"
-          src="/manus-storage/async-images/uSflFX4PjAkPhLbDDFXvw6/image-1.webp"
-          alt="A student in school uniform studying in a library"
+          src="/lexify-learning-hero.webp"
+          alt="An open book, glasses and laptop arranged for study"
           fill
           priority
           sizes="100vw"

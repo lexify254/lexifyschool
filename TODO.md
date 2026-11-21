@@ -8,6 +8,13 @@ Scope follows `lexifyschool.md` (Master Build Prompt, Version 3), which replaces
 - Route seller inquiries and purchase questions to the seller's WhatsApp number using a safe `https://wa.me/<digits>?text=<encoded message>` destination. Record aggregate outbound handoff clicks by listing/seller only; label them as clicks, not unique people, sent messages, received inquiries, sales, or payments. Do not store the clicker's name, phone, message content, or raw IP.
 - After a seller manually confirms a sale arranged outside Lexify School, allow that seller to issue a downloadable PDF receipt with the Lexify School logo, a unique receipt number, issue date, seller, item/description, quantity, unit price/total in KES, optional buyer name, and a QR link to public verification. The receipt is seller-reported, not a Lexify-verified payment or tax invoice; no click automatically creates a receipt. The public QR page must not expose buyer name/contact details.
 
+## Current request — school seal and Vercel deployment readiness
+
+- [x] Use the supplied Lexify School seal as the shared site logo and browser icon, retain the existing text wordmark, and use the seal in seller-reported PDF receipts and platform branding.
+- [x] Fix the missing Vercel homepage background by serving the hero image from the committed `public/` directory instead of a Manus-only storage URL; keep the image compressed and its free-use source documented.
+- [ ] Activate and verify every feature in the established site scope before describing the whole platform as launch-ready. The current codebase still has open outcomes in Phases 1–13 below; preserve those as incomplete and do not add on-site payments, checkout or payment credentials.
+- [ ] Complete Vercel-specific setup outside this repository: set the required environment values in Vercel and configure the Supabase HTTPS site URL/redirect allowlist for the actual deployment domain.
+
 ## Delivered milestone — landing page and role routes
 
 - [x] Create the Lexify School landing page from the supplied reference, with public navigation, a student-learning hero, calls to action, curriculum/computer-package categories, Why Lexify, community, and account creation sections.

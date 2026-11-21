@@ -54,10 +54,11 @@ Email, SMS, and malware scanning are optional configured services. If scanning i
 ### Vercel
 
 1. Import the repository into Vercel and select the Next.js framework.
-2. Configure `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and `NEXT_PUBLIC_SITE_URL` (the public HTTPS origin used in receipt QR links). Keep service-role, mail and malware-scanning variables server-only.
+2. Configure `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_SITE_URL=https://lexifyschool.vercel.app`, and the server-side `WHATSAPP_ADMIN_NUMBER`. Keep service-role, mail and malware-scanning variables server-only.
 3. Set Supabase Auth's HTTPS site URL and redirect allowlist for the deployment domain.
-4. Set a verified `WHATSAPP_ADMIN_NUMBER` in the deployment's server-side environment before enabling central course or resource inquiries.
-5. Review privacy, terms, child-safety, contact details, curriculum data and upload scanning before accepting real users.
+4. Review privacy, terms, child-safety, contact details, curriculum data and upload scanning before accepting real users.
+
+The homepage hero and school seal are committed under `public/`, so they are served by Vercel without Manus Storage. The hero photo is by [Melike B on Pexels](https://www.pexels.com/photo/book-with-laptop-on-bed-7420353/) and is available under the [Pexels License](https://www.pexels.com/license/).
 
 ### Container
 

@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import PDFDocument from "pdfkit";
 import QRCode from "qrcode";
 
@@ -138,62 +140,15 @@ function drawLexifyMark(
   document: PDFKit.PDFDocument,
   x: number,
   y: number,
-  size: number
+  size: number,
+  logoPng: Buffer
 ): void {
-  document.save();
-  document.translate(x, y);
-  document.scale(size / 64);
-
-  document
-    .lineJoin("round")
-    .moveTo(6, 21)
-    .lineTo(32, 8)
-    .lineTo(58, 21)
-    .lineTo(32, 34)
-    .closePath()
-    .lineWidth(2.5)
-    .fillAndStroke("#1E3A8A", "#F59E0B");
-
-  document
-    .lineJoin("round")
-    .moveTo(14, 29)
-    .lineTo(14, 41)
-    .bezierCurveTo(22, 48, 32, 48, 32, 48)
-    .bezierCurveTo(32, 48, 42, 48, 50, 41)
-    .lineTo(50, 29)
-    .closePath()
-    .lineWidth(3)
-    .fillAndStroke("#FFFFFF", "#1E3A8A");
-
-  document
-    .lineCap("round")
-    .moveTo(9, 24)
-    .lineTo(9, 40)
-    .lineWidth(3)
-    .strokeColor("#F59E0B")
-    .stroke();
-  document.circle(9, 43, 3).fillColor("#F59E0B").fill();
-
-  document
-    .lineCap("round")
-    .moveTo(20, 35)
-    .bezierCurveTo(25, 38, 28, 39, 32, 39)
-    .bezierCurveTo(36, 39, 39, 38, 44, 35)
-    .lineWidth(2.5)
-    .strokeColor("#1E3A8A")
-    .stroke();
-  document
-    .moveTo(20, 44)
-    .bezierCurveTo(24, 47, 28, 48, 32, 48)
-    .bezierCurveTo(36, 48, 40, 47, 44, 44)
-    .lineWidth(2)
-    .strokeColor("#F59E0B")
-    .stroke();
-  document.restore();
+  document.image(logoPng, x, y, { fit: [size, size] });
 }
 
 function renderPdf(
   qrPng: Buffer,
+  logoPng: Buffer,
   input: {
     receiptNumber: string;
     sellerName: string;
@@ -228,7 +183,7 @@ function renderPdf(
       const muted = "#536276";
       const amber = "#F59E0B";
 
-      drawLexifyMark(document, 46, 36, 54);
+      drawLexifyMark(document, 46, 36, 54, logoPng);
       document
         .fillColor(navy)
         .font("Helvetica-Bold")
@@ -490,8 +445,11 @@ export async function createSellerReceiptPdf(
     margin: 2,
     errorCorrectionLevel: "M",
   });
+  const logoPng = await readFile(
+    join(process.cwd(), "public", "lexify-school-seal.png")
+  );
 
-  return renderPdf(qrPng, {
+  return renderPdf(qrPng, logoPng, {
     receiptNumber,
     sellerName,
     buyerName,

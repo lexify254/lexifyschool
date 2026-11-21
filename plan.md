@@ -17,11 +17,11 @@ Curriculum remains data-driven: education systems, levels/status dates, learning
 - `src/lib/supabase/`: browser, server and privileged clients; session handling, role guards, storage and RLS-aware queries.
 - `src/lib/curriculum/`: rule evaluation, subject-choice validation, assessment conversion and curriculum helpers shared by UI and server validation.
 - `src/lib/whatsapp/`: validated seller contact normalization, item-specific `wa.me` destinations and minimal handoff tracking; no WhatsApp API or automated sending.
-- `src/lib/pdf/`: branded learning reports, certificates and seller-issued receipt PDFs using the existing PDFKit/QRCode dependencies and Lexify mark.
+- `src/lib/pdf/`: branded learning reports, certificates and seller-issued receipt PDFs using the existing PDFKit/QRCode dependencies and supplied Lexify School seal.
 - `src/lib/notifications/`, `src/lib/security/`: optional notification adapters, validation/rate limits and upload policies.
 - `supabase/migrations/`: application tables, indexes, triggers, RLS, storage policies, aggregate WhatsApp handoff events and seller receipt records; `supabase/seed.sql` and manual admin setup SQL hold editable curriculum and safe defaults.
 - `tests/`: curriculum, authorization, WhatsApp URL, receipt policy and core feature tests; no payment-provider tests.
-- Root configuration: `.env.example`, `Dockerfile`, `vercel.json`, `README.md`, `TODO.md`, `plan.md`, `app.config.ts` and `public/manus-routes.json`.
+- Root configuration: `.env.example`, `Dockerfile`, `README.md`, `TODO.md`, `plan.md`, `app.config.ts` and `public/manus-routes.json`; self-hosted website visuals live in `public/` so Vercel does not depend on Manus Storage paths.
 
 ## Design direction
 
@@ -35,7 +35,7 @@ Curriculum remains data-driven: education systems, levels/status dates, learning
 - **Typography System:** Inter for interface and body text with a bold geometric display treatment; large headlines, compact labels and highly legible form copy.
 - **Brand Essence:** a dependable Kenyan learning hub connecting learners, guardians and teachers with curriculum-aligned tutoring and practical digital skills; **smart, supportive, credible**.
 - **Brand Voice:** encouraging, direct and reassuring. Examples: “Learn at your pace. Grow with the right support.” / “Ask the seller about a class or course on WhatsApp.”
-- **Wordmark & Logo:** clean “Lexify School” text wordmark paired with a small graduation-cap/open-book mark; use the existing `public/lexify-mark.svg` in receipts.
+- **Wordmark & Logo:** preserve the “Lexify School” text wordmark and use the owner-supplied circular Lexify School seal as the shared header/footer mark, browser icon and PDF receipt logo; `app.config.ts` uses its durable HTTPS upload for platform branding.
 - **Signature Brand Color:** deep royal blue `#1E3A8A`.
 
 ## WhatsApp handoff counts and seller receipts
@@ -60,3 +60,5 @@ Reuse Lucide icons and existing brand colors. Implement the signup backdrop and 
 ## Serving and material constraints
 
 Use the enabled WebDev Node server for Next.js preview and managed publication; the app must honor `PORT`. Keep the code Vercel-compatible and document deployment. Supabase Auth/Storage/Realtime and email/malware services are external and must use server-only secrets where appropriate. Do not include payment-provider keys or checkout routes. Keep `/manus-routes.json` synchronized with the implemented page routes. The current project configuration has auto-publication enabled, so checkpoint pushes may publish; do not change this setting. Preserve the project's configured port, canonical repository and existing history.
+
+The homepage hero uses a compressed, committed file under `public/` rather than a `/manus-storage/` URL, so Vercel can serve it as a deployment asset. The photo source and license are documented in `README.md`. Vercel must separately receive the required Supabase public client values, public site origin and seller WhatsApp contact; Manus project secrets do not configure Vercel automatically.
