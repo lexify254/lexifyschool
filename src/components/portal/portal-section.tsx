@@ -10,6 +10,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { readSection } from "./portal-data";
 import styles from "./portal.module.css";
 import { TeacherVerificationForm } from "./teacher-verification-form";
+import { TeacherProfileForm } from "./teacher-profile-form";
 
 const sections: Record<
   PortalRole,
@@ -179,6 +180,9 @@ export async function PortalSection({
         emptyTitle={`No ${config.title.toLowerCase()} records yet`}
         emptyMessage="No records are currently visible to your signed-in account for this section. New items appear when they are available under your account access."
       />
+      {role === "teacher" && section === "profile" && data.teacherProfile ? (
+        <TeacherProfileForm defaults={data.teacherProfile} />
+      ) : null}
       {role === "teacher" && section === "badge" && data.teacherVerification ? (
         <section
           className={`portal-panel ${styles.verificationStatus}`}
@@ -186,9 +190,11 @@ export async function PortalSection({
         >
           <h2 id="verification-claim-status-heading">Verification claim</h2>
           {data.teacherVerification.status === "verified" ? (
-            <p role="status">
-              Your teacher profile is verified. No further claim is needed.
-            </p>
+            <div role="status">
+              <p>Your teacher profile is verified. No further claim is needed.</p>
+              {data.teacherVerification.awardExpiresAt ? <p>Your 14-day free trial is active until {new Date(data.teacherVerification.awardExpiresAt).toLocaleString()}.</p> : <p>Your badge is active following manual Admin continuation.</p>}
+              <p>Verification may help students and parents recognize your profile; it does not guarantee inquiries.</p>
+            </div>
           ) : data.teacherVerification.requestStatus === "pending" ||
             data.teacherVerification.status === "pending" ? (
             <p role="status">
@@ -197,6 +203,8 @@ export async function PortalSection({
             </p>
           ) : (
             <>
+              {data.teacherVerification.awardExpiresAt && !data.teacherVerification.awardRevokedAt && Date.parse(data.teacherVerification.awardExpiresAt) <= Date.now() ? <p role="status">Your 14-day trial badge has expired and is no longer shown as verified.</p> : null}
+              {data.teacherVerification.awardRevokedAt ? <p role="status">Your badge was revoked by an Admin and is not shown as verified.</p> : null}
               {data.teacherVerification.requestStatus === "rejected" ? (
                 <div className={styles.verificationReviewNote}>
                   <strong>Latest request: rejected</strong>
@@ -208,7 +216,12 @@ export async function PortalSection({
                 </div>
               ) : null}
               {data.teacherVerification.hasTeacherDetails ? (
-                <TeacherVerificationForm />
+                <TeacherVerificationForm
+                  feeConfigured={data.teacherVerification.feeConfigured}
+                  feeAmount={data.teacherVerification.feeAmount}
+                  feeSnapshot={data.teacherVerification.feeSnapshot}
+                  feeCurrency={data.teacherVerification.feeCurrency}
+                />
               ) : (
                 <p role="status">
                   A teacher profile record is required before you can submit a

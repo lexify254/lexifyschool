@@ -106,6 +106,118 @@ function ActionForm({
     </form>
   );
 }
+
+function MaterialUploadForm({
+  classOptions,
+  onSuccess,
+}: {
+  classOptions: { value: string; label: string }[];
+  onSuccess: () => void;
+}) {
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setSaving(true);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    const file = form.get("file");
+    if (!(file instanceof File) || !file.size) {
+      setError("Choose a learning material file to upload.");
+      setSaving(false);
+      return;
+    }
+    try {
+      const upload = new FormData();
+      upload.append("bucket", "materials");
+      upload.append("file", file);
+      const uploadResponse = await fetch("/api/files", {
+        method: "POST",
+        body: upload,
+      });
+      const uploaded = await uploadResponse.json();
+      if (!uploadResponse.ok) {
+        setError(uploaded.error ?? "The file could not be uploaded securely.");
+        return;
+      }
+      const response = await fetch("/api/learning", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          action: "addMaterial",
+          title: String(form.get("title") ?? ""),
+          details: String(form.get("details") ?? ""),
+          filePath: String(uploaded.path ?? ""),
+          mimeType: String(uploaded.mimeType ?? ""),
+          classId: String(form.get("classId") ?? ""),
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        setError(
+          result.error ??
+            "The private upload succeeded, but its material record could not be saved. Contact support before uploading again."
+        );
+        return;
+      }
+      formElement.reset();
+      onSuccess();
+    } catch {
+      setError(
+        "The upload service could not be reached. Check your connection and try again."
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+  return (
+    <form className={styles.form} onSubmit={submit}>
+      <h3>Upload a teaching material</h3>
+      <label>
+        Title
+        <input name="title" required maxLength={160} />
+      </label>
+      <label>
+        Description (optional)
+        <input name="details" maxLength={1000} />
+      </label>
+      <label>
+        File (PDF, JPEG, PNG or WebP)
+        <input
+          name="file"
+          type="file"
+          accept="application/pdf,image/jpeg,image/png,image/webp"
+          required
+        />
+      </label>
+      <label>
+        Share with class (optional)
+        <select name="classId" defaultValue="">
+          <option value="">Keep private to your account</option>
+          {classOptions.map(option => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <p className={styles.note}>
+        Uploads stay in private storage and must pass the configured file
+        validation and malware scan.
+      </p>
+      {error ? (
+        <p className={styles.error} role="alert">
+          {error}
+        </p>
+      ) : null}
+      <button className="button button--blue" type="submit" disabled={saving}>
+        {saving ? "Uploading securely…" : "Upload material"}
+      </button>
+    </form>
+  );
+}
+
 function ClassOptions({
   classes,
   label = "Class",
@@ -346,37 +458,12 @@ export function LearningSection({
       ) : null}
       {teacher && section === "materials" ? (
         <section className={styles.panel}>
-          <h2>Add teaching material reference</h2>
+          <h2>Add teaching material</h2>
           <p>
-            Use a file already stored in your private materials bucket; this
-            form does not upload files. A selected class receives a share record
-            under the database's class-access policy.
+            Upload a new file securely or optionally share it with one of your
+            classes. Files are not made public by this form.
           </p>
-          <ActionForm
-            title="Material details"
-            action="addMaterial"
-            onSuccess={refresh}
-            fields={[
-              { name: "title", label: "Title", required: true },
-              { name: "details", label: "Description" },
-              {
-                name: "filePath",
-                label: "Private file name or path",
-                required: true,
-                placeholder: "worksheet.pdf",
-              },
-              {
-                name: "mimeType",
-                label: "File type (optional)",
-                placeholder: "application/pdf",
-              },
-              {
-                name: "classId",
-                label: "Share with class (optional)",
-                options: classOptions,
-              },
-            ]}
-          />
+          <MaterialUploadForm classOptions={classOptions} onSuccess={refresh} />
         </section>
       ) : null}
       {teacher && section === "questions" && questionOptions.length ? (

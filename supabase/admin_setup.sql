@@ -7,6 +7,7 @@ declare
   target_user_id uuid := null;
   matched_id uuid;
   matched_email text;
+  matched_verified boolean;
 begin
   if target_email = 'REPLACE_WITH_EXACT_EXISTING_AUTH_EMAIL' then
     target_email := null;
@@ -16,15 +17,18 @@ begin
   end if;
 
   if target_user_id is not null then
-    select u.id, u.email into matched_id, matched_email
+    select u.id, u.email, (u.email_confirmed_at is not null) into matched_id, matched_email, matched_verified
       from auth.users as u where u.id = target_user_id;
   else
-    select u.id, u.email into matched_id, matched_email
+    select u.id, u.email, (u.email_confirmed_at is not null) into matched_id, matched_email, matched_verified
       from auth.users as u where u.email = target_email;
   end if;
 
   if matched_id is null then
     raise exception 'No pre-existing Auth user matched the supplied exact selector. Sign up first; no user was created.';
+  end if;
+  if not matched_verified then
+    raise exception 'The selected Auth user must verify their email before administrator promotion.';
   end if;
 
   insert into public.profiles(id, role, full_name, email, is_suspended)

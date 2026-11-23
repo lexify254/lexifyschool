@@ -6,6 +6,7 @@ import {
   listPublicTeachers,
   normalizeTeacherFilters,
 } from "@/lib/data/teacher-marketplace";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -58,11 +59,22 @@ export default async function TeachersPage({
     maxPrice: rawMaxPrice,
     pricingBasis: first(params.pricing),
     verified: first(params.verified) === "on",
+    sort: first(params.sort),
   });
   const [teacherResult, optionsResult] = await Promise.all([
-    listPublicTeachers(filters),
+    listPublicTeachers({ ...filters, verified: false }),
     getTeacherFilterOptions(),
   ]);
+  const supabase = await getSupabaseServerClient();
+  const teacherRows = teacherResult.data ?? [];
+  const ids = teacherRows.map(teacher => teacher.profile_id);
+  const activeResult = supabase && ids.length
+    ? await supabase.rpc("get_active_teacher_verification_teacher_ids", { target_teacher_ids: ids })
+    : { data: [], error: true };
+  const activeIds = new Set(((activeResult.data ?? []) as { teacher_id: string }[]).map(row => row.teacher_id));
+  const visibleTeachers = teacherRows
+    .map(teacher => ({ ...teacher, verification_status: activeIds.has(teacher.profile_id) ? "verified" : "unverified" }))
+    .filter(teacher => !filters.verified || teacher.verification_status === "verified");
   const systems = optionsResult.data?.systems ?? [];
   const grades = optionsResult.data?.grades ?? [];
   const areas = optionsResult.data?.areas ?? [];
@@ -146,6 +158,17 @@ export default async function TeachersPage({
                 <option value="monthly">Monthly</option>
               </select>
             </label>
+            <label className="filter-control">
+              <span>Sort teachers</span>
+              <select name="sort" defaultValue={filters.sort}>
+                <option value="name">Name A–Z</option>
+                <option value="newest">Newest profile</option>
+                <option value="price_asc">Lowest listed starting price</option>
+                <option value="price_desc">
+                  Highest listed starting price
+                </option>
+              </select>
+            </label>
             <label className="filter-check">
               <input
                 name="verified"
@@ -155,7 +178,7 @@ export default async function TeachersPage({
               <span>Verified profiles only</span>
             </label>
             <button className="button button--blue" type="submit">
-              Apply filters
+              Apply filters and sort
             </button>
             <Link className="button button--line" href="/teachers">
               Clear
@@ -175,17 +198,19 @@ export default async function TeachersPage({
             <>
               <div className="catalogue-heading">
                 <h2>
-                  {teacherResult.data.length}{" "}
-                  {teacherResult.data.length === 1 ? "teacher" : "teachers"}
+                  {visibleTeachers.length} {" "}
+                  {visibleTeachers.length === 1 ? "teacher" : "teachers"}
                 </h2>
                 <p>
-                  Only teachers accepting students are shown. Class-based
-                  filters match published, active class options.
+                  Only teachers accepting students are shown. Subject and grade
+                  filters also include the teaching selections recorded during
+                  signup. Starting prices are teacher-provided and
+                  informational.
                 </p>
               </div>
-              {teacherResult.data.length ? (
+              {visibleTeachers.length ? (
                 <div className="teacher-grid">
-                  {teacherResult.data.map(teacher => {
+                  {visibleTeachers.map(teacher => {
                     const id = teacher.profile_id;
                     const name = teacher.public_name || "Lexify teacher";
                     return (
@@ -223,6 +248,39 @@ export default async function TeachersPage({
                               ? `${teacher.experience_years} years of experience`
                               : "Experience not listed"}
                           </div>
+                          {teacher.subjects.length ? (
+                            <p className="teacher-card__subjects">
+                              <strong>Teaches:</strong>{" "}
+                              {teacher.subjects
+                                .map(
+                                  subject =>
+                                    `${subject.title}${subject.grade_name ? ` · ${subject.grade_name}` : ""}`
+                                )
+                                .join(" · ")}
+                            </p>
+                          ) : null}
+                          {teacher.services?.includes("tuition") ? (
+                            <span className="teacher-service">Tuition</span>
+                          ) : null}
+                          {teacher.starting_price_kes != null &&
+                          Number.isFinite(Number(teacher.starting_price_kes)) &&
+                          teacher.pricing_basis ? (
+                            <p className="teacher-card__price">
+                              <strong>
+                                From KES{" "}
+                                {new Intl.NumberFormat("en-KE", {
+                                  maximumFractionDigits: 0,
+                                }).format(Number(teacher.starting_price_kes))}
+                              </strong>{" "}
+                              <span>
+                                per{" "}
+                                {teacher.pricing_basis === "lesson_bundle"
+                                  ? "lesson bundle"
+                                  : teacher.pricing_basis}
+                              </span>{" "}
+                              <small>Informational price</small>
+                            </p>
+                          ) : null}
                           <Link
                             className="button button--line button--small"
                             href={`/teachers/${encodeURIComponent(id)}`}

@@ -86,17 +86,26 @@ export async function GET(request: NextRequest) {
     if (clearError) return redirect(request, "/signup?error=curriculum_pending");
   }
 
-  const parentStudentId = request.nextUrl.searchParams.get("parent_student_id");
-  if (role === "parent" && parentStudentId && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(parentStudentId)) {
-    const { error: linkError } = await supabase.from("parent_student_links").insert({
-      parent_id: authData.user.id,
-      student_id: parentStudentId,
-      relationship: "parent/guardian",
-    });
-    if (linkError) return redirect(request, "/signup?error=parent_link_pending");
+  const parentStudentCode = request.nextUrl.searchParams.get("parent_student_code")?.trim().toUpperCase() ?? "";
+  let parentLinkRequested = false;
+  let parentLinkRetry = false;
+  if (role === "parent" && parentStudentCode) {
+    if (!/^LEX-[A-F0-9]{16}$/.test(parentStudentCode)) {
+      parentLinkRetry = true;
+    } else {
+      const { error: linkError } = await supabase.rpc("request_parent_student_link_by_code", {
+        p_student_code: parentStudentCode,
+      });
+      if (linkError) parentLinkRetry = true;
+      else parentLinkRequested = true;
+    }
   }
 
-  const destination = next
+  const destination = role === "parent" && parentLinkRequested
+    ? "/profile?link=requested"
+    : role === "parent" && parentLinkRetry
+      ? "/profile?link=retry"
+      : next
     ? safeRoleDestination(next, request.nextUrl.origin, role)
     : roleHome[role];
   return redirect(request, destination);

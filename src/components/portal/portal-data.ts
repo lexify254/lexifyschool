@@ -4,6 +4,7 @@ import type { CurrentProfile } from "@/lib/auth/guards";
 import type { PortalRecord } from "./portal-ui";
 import { buildWhatsAppHandoffHref } from "@/lib/whatsapp/handoff";
 import { whatsappHref } from "@/lib/whatsapp/links";
+import { isActiveVerificationAward } from "@/lib/verification/pricing";
 
 export type SubjectItem = {
   id: string;
@@ -37,6 +38,14 @@ export type DashboardData = {
     status: string;
     requestStatus: string | null;
     submittedAt: string | null;
+    reviewNote?: string | null;
+    feeSnapshot?: number | null;
+    feeCurrency?: string;
+    feeConfigured?: boolean;
+    feeAmount?: number | null;
+    awardExpiresAt?: string | null;
+    awardRevokedAt?: string | null;
+    hasTeacherDetails?: boolean;
   };
 };
 type Row = Record<string, any>;
@@ -1054,6 +1063,19 @@ export async function readSection(
     submittedAt: string | null;
     reviewNote: string | null;
     hasTeacherDetails: boolean;
+    feeSnapshot: number | null;
+    feeCurrency: string;
+    feeConfigured: boolean;
+    feeAmount: number | null;
+    awardExpiresAt: string | null;
+    awardRevokedAt: string | null;
+  };
+  teacherProfile?: {
+    publicName: string;
+    bio: string;
+    startingPrice: string;
+    pricingBasis: string;
+    services: string[];
   };
 }> {
   const id = profile.id;
@@ -1702,7 +1724,7 @@ export async function readSection(
       };
     }
     if (section === "badge") {
-      const [details, awards, requests] = await Promise.all([
+      const [details, awards, requests, offerResult] = await Promise.all([
         one(client, "teacher_details", "verification_status", q =>
           q.eq("profile_id", id)
         ),
@@ -1716,27 +1738,66 @@ export async function readSection(
         list(
           client,
           "teacher_verification_requests",
-          "status,submitted_at,review_note",
+          "status,submitted_at,review_note,fee_snapshot,fee_currency",
           q =>
             q.eq("teacher_id", id).order("submitted_at", { ascending: false }),
           20
         ),
+        (async () => {
+          try {
+            return await client.rpc("get_teacher_verification_offer");
+          } catch {
+            return { data: null, error: true };
+          }
+        })(),
       ]);
+      const latestAward = awards[0];
+      const active = isActiveVerificationAward(
+        latestAward
+          ? {
+              revoked_at: latestAward.revoked_at
+                ? String(latestAward.revoked_at)
+                : null,
+              expires_at: latestAward.expires_at
+                ? String(latestAward.expires_at)
+                : null,
+            }
+          : null
+      );
+      const effectiveStatus =
+        details?.verification_status === "verified" && active
+          ? "verified"
+          : "unverified";
+      const offer =
+        offerResult?.data && typeof offerResult.data === "object"
+          ? (offerResult.data as {
+              configured?: boolean;
+              amount?: number | string | null;
+            })
+          : null;
+      const feeAmount = offer?.amount == null ? null : Number(offer.amount);
       return {
         records: [
           {
-            title: `Verification: ${text(details?.verification_status, "unverified")}`,
+            title: `Verification: ${effectiveStatus}`,
             detail: "Teacher profile verification status",
-            meta: "Verification and badge awards are separate records",
+            meta:
+              latestAward?.expires_at && !active
+                ? `Trial expired ${date(latestAward.expires_at)}`
+                : "Verification and badge awards are separate records",
           },
           ...awards.map(x => ({
             title: "Badge award",
-            detail: x.revoked_at ? "Revoked" : "Active",
+            detail: x.revoked_at
+              ? "Revoked"
+              : x.expires_at && Date.parse(String(x.expires_at)) <= Date.now()
+                ? "Expired"
+                : "Active",
             meta: `Awarded ${date(x.awarded_at)}${x.expires_at ? ` · expires ${date(x.expires_at)}` : ""}`,
           })),
         ],
         teacherVerification: {
-          status: String(details?.verification_status ?? "unverified"),
+          status: effectiveStatus,
           requestStatus: requests[0]?.status
             ? String(requests[0].status)
             : null,
@@ -1747,6 +1808,22 @@ export async function readSection(
             ? String(requests[0].review_note)
             : null,
           hasTeacherDetails: Boolean(details),
+          feeSnapshot:
+            requests[0]?.fee_snapshot == null
+              ? null
+              : Number(requests[0].fee_snapshot),
+          feeCurrency: String(requests[0]?.fee_currency ?? "KES"),
+          feeConfigured:
+            offer?.configured === true &&
+            feeAmount !== null &&
+            Number.isFinite(feeAmount),
+          feeAmount,
+          awardExpiresAt: latestAward?.expires_at
+            ? String(latestAward.expires_at)
+            : null,
+          awardRevokedAt: latestAward?.revoked_at
+            ? String(latestAward.revoked_at)
+            : null,
         },
       };
     }
@@ -1754,7 +1831,7 @@ export async function readSection(
       const details = await one(
         client,
         "teacher_details",
-        "public_name,bio,verification_status,is_accepting_students",
+        "public_name,bio,verification_status,is_accepting_students,starting_price_kes,pricing_basis,services",
         q => q.eq("profile_id", id)
       );
       return {
@@ -1765,7 +1842,25 @@ export async function readSection(
             meta: `Verification ${text(details?.verification_status)} · ${details?.is_accepting_students ? "Accepting learners" : "Not accepting learners"}`,
           },
         ],
-        note: "Profile edits are not enabled on this page.",
+        teacherProfile: {
+          publicName:
+            typeof details?.public_name === "string" ? details.public_name : "",
+          bio: typeof details?.bio === "string" ? details.bio : "",
+          startingPrice:
+            details?.starting_price_kes == null
+              ? ""
+              : String(details.starting_price_kes),
+          pricingBasis:
+            typeof details?.pricing_basis === "string"
+              ? details.pricing_basis
+              : "",
+          services: Array.isArray(details?.services)
+            ? details.services.filter(
+                (value: unknown): value is string => value === "tuition"
+              )
+            : [],
+        },
+        note: "Edit your public name, biography, optional informational starting price and supported services. Verification status remains platform-managed.",
       };
     }
   }

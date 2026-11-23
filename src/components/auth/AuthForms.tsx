@@ -36,14 +36,14 @@ const text = (value: unknown) => String(value ?? "").trim();
 export function RoleChooser({ issue }: { issue?: string }) {
   const descriptions: Record<Role, string> = {
     student: "Choose your learning level, curriculum and subjects.",
-    parent: "Create your account and add learner preferences if you wish.",
+    parent: "Create a parent account and request a child link with their student ID.",
     teacher: "Choose the curriculum, grades and subjects you teach.",
     guest: "Explore Lexify School with a basic account.",
   };
   const recoveryMessages: Record<string, string> = {
     curriculum_pending: "Your email was verified, but curriculum or learner profile details were not saved. Sign in and complete setup before relying on your subject selection.",
     teacher_subjects_pending: "Your email was verified, but teaching subjects or teacher details were not saved. Sign in and complete your profile.",
-    parent_link_pending: "Your email was verified, but the learner-link request was not saved. Sign in and submit the request again.",
+    parent_link_pending: "Your email was verified, but the learner-link request needs attention. Sign in and submit the student ID again from your profile.",
   };
   return <main className={`auth-page ${styles.signupPage}`}><div className={`container auth-layout ${styles.roleLayout}`}><section className="auth-card"><p className="eyebrow">GET STARTED</p><h1>Create your account</h1><p className="auth-card__intro">Choose how you’ll use Lexify School. You can’t register as an administrator.</p>{issue && recoveryMessages[issue] ? <div className="form-error" role="alert">{recoveryMessages[issue]} <Link href="/login">Sign in</Link></div> : null}<div className="role-grid">{(Object.keys(roleLabels) as Role[]).map((role) => { const Icon = roleIcons[role]; return <Link className="role-card" key={role} href={`/signup/${role}`}><span className="role-card__icon" aria-hidden="true"><Icon size={22} strokeWidth={1.8} /></span><h2>{roleLabels[role]}</h2><p>{descriptions[role]}</p></Link>; })}</div><p className="auth-card__intro" style={{ marginTop: 22 }}>Already have an account? <Link href="/login">Sign in</Link></p></section><aside className="auth-card"><h2>Safe, supported learning</h2><p className="auth-card__intro">We only ask for the information needed to set up your account. Learner subject choices are checked against the active catalogue and curriculum rules.</p></aside></div></main>;
 }
@@ -120,7 +120,7 @@ export function SignupForm({ role: requestedRole }: { role: string }) {
   const client = useMemo(() => getSupabaseBrowserClient(), []);
   const [catalogue, setCatalogue] = useState<Catalogue>(blankCatalogue);
   const [catalogueError, setCatalogueError] = useState("");
-  const [loadingCatalogue, setLoadingCatalogue] = useState(role === "student" || role === "teacher" || role === "parent");
+  const [loadingCatalogue, setLoadingCatalogue] = useState(role === "student" || role === "teacher");
   const [systemId, setSystemId] = useState("");
   const [gradeId, setGradeId] = useState("");
   const [pathwayId, setPathwayId] = useState("");
@@ -136,7 +136,7 @@ export function SignupForm({ role: requestedRole }: { role: string }) {
   const [recoverable, setRecoverable] = useState(false);
 
   useEffect(() => {
-    if (role !== "student" && role !== "teacher" && role !== "parent") return;
+    if (role !== "student" && role !== "teacher") return;
     if (!client) { setLoadingCatalogue(false); setCatalogueError("Account services are not configured, so the live curriculum is unavailable."); return; }
     let active = true;
     loadCatalogue(client).then((data) => { if (active) { setCatalogue(data); setCatalogueError(""); } }).catch((e) => { if (active) setCatalogueError(plainError(e, "Could not load the live curriculum.")); }).finally(() => { if (active) setLoadingCatalogue(false); });
@@ -242,6 +242,7 @@ export function SignupForm({ role: requestedRole }: { role: string }) {
     const email = text(form.get("email"));
     const password = text(form.get("password"));
     const rawWhatsapp = text(form.get("whatsapp"));
+    const parentStudentCode = role === "parent" ? text(form.get("studentId")).toUpperCase() : "";
     const whatsappDigits = rawWhatsapp ? normalizeKenyanPhone(rawWhatsapp) : null;
     const whatsapp = whatsappDigits ? `+${whatsappDigits}` : "";
     if (!fullName) { setError("Enter your full name."); return; }
@@ -254,16 +255,11 @@ export function SignupForm({ role: requestedRole }: { role: string }) {
       if (!form.get("guardianConsent")) { setError("A parent or guardian’s consent is required to create a student account."); return; }
     }
     if (role === "guest" && !form.get("adultConsent")) { setError("Confirm that you are 18 or older, or that your parent or guardian has given consent."); return; }
+    if (role === "parent" && parentStudentCode && !/^LEX-[A-F0-9]{16}$/.test(parentStudentCode)) { setError("Enter the student ID exactly as shown on the learner’s profile, for example LEX- followed by 16 characters."); return; }
     if (role === "teacher" && !teacherPairs.length) { setError("Choose at least one active teaching grade and subject."); return; }
     if (role === "teacher") {
       const experience = text(form.get("experience"));
       if (experience && (!Number.isInteger(Number(experience)) || Number(experience) < 0 || Number(experience) > 80)) { setError("Enter teaching experience as a whole number from 0 to 80 years."); return; }
-    }
-    if (role === "parent" && (systemId || gradeId || selectedAreas.length)) {
-      const validSubjectIds = new Set(gradeRows.map((item) => String(item.id)));
-      if (!system || !grade || grade.system_id !== system.id || selectedAreas.some((id) => !validSubjectIds.has(id))) {
-        setError("Choose a matching curriculum and active grade for your optional learner preferences."); return;
-      }
     }
     if (password.length < 8) { setError("Use a password with at least 8 characters."); return; }
     const ids = role === "student" ? selectedIds() : [];
@@ -276,9 +272,6 @@ export function SignupForm({ role: requestedRole }: { role: string }) {
       role, full_name: fullName, whatsapp: whatsapp || null,
       education_system_id: role === "student" ? systemId : null,
       grade_id: role === "student" ? gradeId : null,
-      preferred_education_system_id: role === "parent" ? system?.id ?? null : null,
-      preferred_grade_id: role === "parent" ? gradeId || null : null,
-      preferred_subject_ids: role === "parent" ? selectedAreas : [],
       pathway_id: role === "student" && senior ? pathwayId || null : null,
       track_id: role === "student" && senior ? trackId || null : null,
       preferred_lesson_times: preferred,
@@ -295,6 +288,7 @@ export function SignupForm({ role: requestedRole }: { role: string }) {
     let accountCreated = false;
     try {
       const callbackUrl = new URL("/auth/callback", window.location.origin);
+      if (role === "parent" && parentStudentCode) callbackUrl.searchParams.set("parent_student_code", parentStudentCode);
       const redirectTo = callbackUrl.toString();
       const { data, error: signUpError } = await client.auth.signUp({ email, password, options: { data: metadata, emailRedirectTo: redirectTo } });
       if (signUpError) throw signUpError;
@@ -306,6 +300,11 @@ export function SignupForm({ role: requestedRole }: { role: string }) {
       }
       if (data.session && data.user) {
         await finalizeAuthenticatedUser(data.user.id, role, role === "student" ? { gradeId, ids, pathwayId: senior ? pathwayId : undefined, trackId: senior ? trackId : undefined } : undefined, metadata);
+        if (role === "parent" && parentStudentCode) {
+          const { error: linkError } = await client.rpc("request_parent_student_link_by_code", { p_student_code: parentStudentCode });
+          router.replace(linkError ? "/profile?link=retry" : "/profile?link=requested");
+          return;
+        }
         router.replace(roleDestinations[role]); return;
       }
       if (!data.user) throw new Error("Supabase did not return a user record for this signup request.");
@@ -323,7 +322,7 @@ export function SignupForm({ role: requestedRole }: { role: string }) {
   const rolesTitle = role === "student" ? "Student account" : `${roleLabels[role]} account`;
   return <main className={`auth-page ${styles.signupPage}`}><div className="container"><section className={`auth-card ${styles.signupPanel}`}>
     <p className="eyebrow">CREATE ACCOUNT · {roleLabels[role].toUpperCase()}</p><h1>{rolesTitle}</h1><p className="auth-card__intro">Create your account with email and password, then verify the link sent to your inbox.</p>
-    {catalogueError && (role === "student" || role === "teacher" || role === "parent") ? <div className="form-error" role="alert">{catalogueError} Curriculum preferences will be available after the catalogue is restored.</div> : null}
+    {catalogueError && (role === "student" || role === "teacher") ? <div className="form-error" role="alert">{catalogueError} Curriculum choices will be available after the catalogue is restored.</div> : null}
     {error && <div className="form-error" role="alert">{error}{recoverable ? <> <Link href="/login">Go to sign in</Link></> : null}</div>}{notice && <div className="form-success" role="status">{notice}</div>}
     <form className="form-grid" onSubmit={processEmailSignup}>
       <div className="form-field"><label htmlFor="fullName">Full name *</label><input id="fullName" name="fullName" autoComplete="name" required maxLength={120} /></div>
@@ -339,7 +338,7 @@ export function SignupForm({ role: requestedRole }: { role: string }) {
         <label className="form-check"><input name="guardianConsent" type="checkbox" required/> My parent or guardian has given consent for this student account and the information submitted.</label>
       </>}
       {role === "teacher" && <><p className="auth-card__intro">Choose at least one active grade and subject. You can add profile details later.</p><TeacherChoices catalogue={catalogue} pairs={teacherPairs} setPairs={setTeacherPairs}/></>}
-      {role === "parent" && <section className="form-grid"><div className="form-divider"/><h2>Optional learner preferences</h2><p className="auth-card__intro">Choose a curriculum, grade and subjects if useful. You can link a learner after creating your account.</p><div className="form-grid form-grid--two"><div className="form-field"><label htmlFor="parentSystem">Curriculum</label><select id="parentSystem" value={systemId} disabled={Boolean(catalogueError)} onChange={(e) => { setSystemId(e.target.value); setGradeId(""); setSelectedAreas([]); }}><option value="">Choose a curriculum</option>{catalogue.systems.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div><div className="form-field"><label htmlFor="parentGrade">Grade / level</label><select id="parentGrade" value={gradeId} disabled={!systemId || Boolean(catalogueError)} onChange={(e) => { setGradeId(e.target.value); setSelectedAreas([]); }}><option value="">Choose an active grade</option>{availableGrades.map((item) => <option key={item.id} value={item.id} disabled={!item.is_active}>{item.name}{!item.is_active ? " (not currently active)" : ""}</option>)}</select></div></div>{grade && <AreaChoices rows={gradeRows.filter((item) => !item.is_optional_activity)} selected={selectedAreas} onToggle={(id) => toggle(selectedAreas, setSelectedAreas, id)} title="Preferred subjects (optional)" />}</section>}
+      {role === "parent" && <section className="form-grid"><div className="form-divider"/><h2>Link to your child</h2><p className="auth-card__intro">Paste the student ID shown on your child’s profile. The request is sent after you verify your email, and the student must confirm before their information is shared with you.</p><div className="form-field"><label htmlFor="studentId">Student ID (optional)</label><input id="studentId" name="studentId" autoComplete="off" maxLength={20} pattern="LEX-[A-Fa-f0-9]{16}" placeholder="LEX-1234ABCD5678EF90"/><small>You can still create your parent account without the ID and submit a link request later from your profile.</small></div></section>}
       {role === "guest" && <label className="form-check"><input name="adultConsent" type="checkbox" required/> I am 18 or older, or my parent/guardian has given consent.</label>}
       <div className="form-grid form-grid--two"><div className="form-field"><label htmlFor="email">Email address *</label><input id="email" name="email" type="email" autoComplete="email" required /></div><div className="form-field"><label htmlFor="password">Password *</label><input id="password" name="password" type="password" autoComplete="new-password" minLength={8} required/></div></div>
       <p className="auth-card__intro">You’ll receive an email verification link. Open it to finish creating your account.</p>

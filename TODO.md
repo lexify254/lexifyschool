@@ -15,6 +15,19 @@ Scope follows `lexifyschool.md` (Master Build Prompt, Version 3), which replaces
 - [ ] Activate and verify every feature in the established site scope before describing the whole platform as launch-ready. The current codebase still has open outcomes in Phases 1–13 below; preserve those as incomplete and do not add on-site payments, checkout or payment credentials.
 - [ ] Complete Vercel-specific setup outside this repository: set the required environment values in Vercel and configure the Supabase HTTPS site URL/redirect allowlist for the actual deployment domain.
 
+## Current request — accounts, teacher profiles and verification pricing
+
+- [x] Parent signup asks for the parent's name, email/password and an optional student ID to link to their child. It does not ask a parent for grade, class, curriculum or student-specific fields. The server resolves the ID through an authenticated RPC and creates only a pending request for a valid student; the student must confirm before access is granted, and unrelated parents cannot discover or read the child's details.
+- [x] Students receive a durable unique student ID that they can view and copy from their profile to share with a parent. Do not use the student's email, full name or raw Auth UUID as the public lookup value.
+- [x] Student, parent, teacher and guest accounts can upload a profile picture. The upload validates image type/size, stores under an owner-scoped private path, and enforces ownership in Storage policies.
+- [x] Keep authenticated users signed in while they move between Home and other sections. Show their private profile picture in the upper-right account control on shared navigation, and let them open their profile page from it.
+- [ ] Teachers can select more than one curriculum-linked subject, choose services they offer (including tuition), set informational pricing, and upload teaching materials. Profile editing, multiple-subject visibility, tuition flags and pricing are implemented; material uploads remain fail-closed until `MAX_UPLOAD_MB` and a working HTTPS malware-scanner configuration are supplied. A teacher may change only their own profile and files; do not create fictional teachers, classes, service details or prices.
+- [x] The public teacher search has a polished icon-led search field, clearly grouped filters and an explicit URL-backed sort choice. Keep search and filters usable on mobile and backed by actual teacher records; do not present fabricated marketplace entries.
+- [x] Eligible teachers can request a verified badge. The request explains that verification may help them reach more students, shows the Admin-configured fee and offers a two-week free trial starting only after Admin approval. If Admin has not configured a fee, the interface displays that state clearly rather than inventing a price. Show request, trial, expired and rejection states truthfully.
+- [x] Admin can configure the verification fee and review requests, approve/reject them, start the 14-day trial, and manually continue or revoke verification. Preserve UUID-based Admin authorization. Keep fee arrangement outside Lexify through WhatsApp when available; do not add checkout, card collection or automatic billing.
+- [x] Explain that the owner opens `/admin` after signing in with a verified Auth account and completing the protected Admin promotion/claim if not already promoted; subsequent access is bound to the Supabase Auth UUID and Admin role. Never grant Admin based only on an email or password entered into a client form. No Admin Auth user exists in the live project yet.
+- [ ] Account signup for every public role completes without a misleading success message or uncaught error. TypeScript, unit and production-build checks pass, but no live signup was attempted and no production test accounts were created; keep required email verification and actionable validation/backend errors, and never bypass Supabase Auth or guardian consent.
+
 ## Delivered milestone — landing page and role routes
 
 - [x] Create the Lexify School landing page from the supplied reference, with public navigation, a student-learning hero, calls to action, curriculum/computer-package categories, Why Lexify, community, and account creation sections.
@@ -52,14 +65,14 @@ Scope follows `lexifyschool.md` (Master Build Prompt, Version 3), which replaces
 - [ ] Senior student chooses pathway/track and exactly three valid electives subject to stored rules; show clear invalid-choice messages.
 - [ ] 8-4-4 student chooses KCSE subjects subject to Group I–V rules.
 - [x] Teacher signup uses name, email/password and verified email, then curriculum-backed active grade and subject dropdowns; WhatsApp and other profile details can be added later. No national ID or TSC number is required.
-- [x] Parent signup uses name, email/password and verified email; optional curriculum/grade/subject dropdowns may capture learner preferences, and child linking can be completed after account creation.
+- [ ] Parent signup uses the parent's name, email/password and a student ID to link to their child. Remove grade, class, curriculum and other student-specific fields from the parent form; validate the ID server-side and enforce parent–student RLS.
 - [x] Guest signup stays light: name, email/password, verified email, and consent checkbox “I am 18 or older, or my parent/guardian has given consent.” No SMS signup; no grade/pathway/guardian fields; after signup go to Computer Packages Academy.
 
 ## Phase 4 — Public pages, teacher marketplace and WhatsApp
 
 - [ ] Build public Home, teacher/subject browse, teacher profile, `/academy`, `/projects`, curriculum guide/pathway helper, how-it-works/pricing, About, Contact, Terms, Privacy, Child-Safety, signup and login pages.
 - [ ] Public Home includes hero, how it works, Junior/Senior/8-4-4/Computer Packages/Projects categories, featured teachers and testimonials.
-- [ ] Teacher browse filters by education category, level, pathway, illustrated subject, price, pricing basis and rating; display verified badge.
+- [ ] Teacher browse filters by education category, level, pathway, illustrated subject, price, pricing basis and rating; display verified badge and provide a clearly arranged sort selector in addition to the professional search box.
 - [ ] Teacher profile shows photo, bio, illustrated subjects, price/pricing basis, reviews, verified badge, Chat on WhatsApp and inquiry actions.
 - [ ] Teachers can define classes with category, level, subject/strand, schedule, meeting link, capacity and informational price; pricing basis per class is lesson bundle of N, weekly or monthly.
 - [ ] WhatsApp click-to-chat uses the normalized signup number in `https://wa.me/<digits>?text=<encoded message>`, with useful prefilled class/subject messages, buttons rather than raw phone numbers, and clear note that click-to-chat URLs necessarily contain the number. Add links on teacher, class, booking/enrolment, parent/teacher lists, course and product pages.

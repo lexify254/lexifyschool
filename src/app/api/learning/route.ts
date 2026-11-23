@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { isAccountSuspended } from "@/lib/auth/suspension";
+import { isSafePrivateObjectPath } from "@/lib/security/file-upload";
 
 export const dynamic = "force-dynamic";
 type ActionBody = Record<string, unknown>;
@@ -230,19 +231,14 @@ export async function POST(request: Request) {
       if (role !== "teacher")
         return fail("Only teachers can add teaching materials.", 403);
       const title = cleanText(body.title, 160);
-      let filePath = cleanText(body.filePath, 500);
+      const filePath = cleanText(body.filePath, 500);
       if (!title || !filePath)
         return fail(
-          "Material title and an existing private file name are required."
+          "Material title and a securely uploaded private file are required."
         );
-      if (!filePath.includes("/")) filePath = `${user.id}/${filePath}`;
-      if (
-        !filePath.startsWith(`${user.id}/`) ||
-        filePath.includes("..") ||
-        filePath.startsWith("/")
-      )
+      if (!isSafePrivateObjectPath(filePath, user.id))
         return fail(
-          "File reference must point to a file in your own private storage folder."
+          "File reference must be a validated upload in your own private storage folder."
         );
       const classId =
         body.classId == null || body.classId === "" ? null : body.classId;

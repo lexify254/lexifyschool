@@ -16,6 +16,7 @@ describe("teacher marketplace filters", () => {
         verified: true,
         maxPrice: 2500,
         pricingBasis: "weekly",
+        sort: "price_desc",
       })
     ).toEqual({
       q: "Amina    Tutor",
@@ -24,6 +25,7 @@ describe("teacher marketplace filters", () => {
       verified: true,
       maxPrice: 2500,
       pricingBasis: "weekly",
+      sort: "price_desc",
     });
   });
 
@@ -36,8 +38,9 @@ describe("teacher marketplace filters", () => {
         maxPrice: Number.POSITIVE_INFINITY,
         pricingBasis: "cash-on-delivery",
         verified: false,
+        sort: "newest-then-cheapest",
       })
-    ).toEqual({ verified: false });
+    ).toEqual({ verified: false, sort: "name" });
   });
 
   it("accepts only UUID-shaped route identifiers", () => {

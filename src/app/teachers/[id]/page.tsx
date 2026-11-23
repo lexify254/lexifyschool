@@ -8,6 +8,7 @@ import {
 } from "@/lib/data/teacher-marketplace";
 import { buildWhatsAppHandoffHref } from "@/lib/whatsapp/handoff";
 import { whatsappHref } from "@/lib/whatsapp/links";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 type Props = { params: Promise<{ id: string }> };
@@ -103,6 +104,19 @@ export default async function TeacherProfilePage({ params }: Props) {
   if (!result.data) notFound();
 
   const { teacher, subjects, classes } = result.data;
+  const verificationClient = await getSupabaseServerClient();
+  let hasActiveVerifiedBadge = false;
+  if (verificationClient) {
+    try {
+      const { data, error } = await verificationClient.rpc(
+        "get_active_teacher_verification_teacher_ids",
+        { target_teacher_ids: [id] }
+      );
+      hasActiveVerifiedBadge = !error && Array.isArray(data) && data.some((row: { teacher_id?: string }) => row.teacher_id === id);
+    } catch {
+      hasActiveVerifiedBadge = false;
+    }
+  }
   const name = teacher.public_name || "Lexify teacher";
   const chat = whatsappHref(teacher.public_whatsapp, enquiryMessage(name))
     ? buildWhatsAppHandoffHref("teacher_profile", id)
@@ -131,7 +145,7 @@ export default async function TeacherProfilePage({ params }: Props) {
           <div>
             <div className="teacher-card__top">
               <h1>{name}</h1>
-              {teacher.verification_status === "verified" ? (
+              {hasActiveVerifiedBadge ? (
                 <span className="verified-pill">Verified teacher</span>
               ) : (
                 <span className="neutral-pill">Not verified</span>
@@ -146,6 +160,28 @@ export default async function TeacherProfilePage({ params }: Props) {
                 ? `${teacher.experience_years} years of experience`
                 : "Experience not listed"}
             </p>
+            {teacher.starting_price_kes != null &&
+            Number.isFinite(Number(teacher.starting_price_kes)) &&
+            teacher.pricing_basis ? (
+              <p className="teacher-profile-price">
+                <strong>
+                  Starting price: {money(Number(teacher.starting_price_kes))}
+                </strong>{" "}
+                per{" "}
+                {teacher.pricing_basis === "lesson_bundle"
+                  ? "lesson bundle"
+                  : teacher.pricing_basis}
+                <span>
+                  Informational only; confirm arrangements directly with the
+                  teacher.
+                </span>
+              </p>
+            ) : null}
+            {teacher.services?.includes("tuition") ? (
+              <p className="teacher-profile-services">
+                <strong>Service:</strong> Tuition
+              </p>
+            ) : null}
             <div className="profile-hero__actions">
               {chat ? (
                 <a
@@ -208,8 +244,8 @@ export default async function TeacherProfilePage({ params }: Props) {
             </div>
           ) : (
             <p className="empty-inline">
-              No learning areas are currently shown because this teacher has no
-              published class options.
+              No teaching subjects or grades have been listed for this teacher
+              yet.
             </p>
           )}
         </section>

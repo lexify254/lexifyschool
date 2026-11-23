@@ -25,6 +25,7 @@
     { "path": "/password/reset", "title": "Reset Password" },
     { "path": "/password/update", "title": "Update Password" },
     { "path": "/privacy", "title": "Privacy" },
+    { "path": "/profile", "title": "Your Profile" },
     { "path": "/projects", "title": "Projects Store" },
     { "path": "/projects/:slug", "title": "Project Details" },
     { "path": "/receipts/verify/:token", "title": "Receipt Verification" },

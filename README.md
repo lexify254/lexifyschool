@@ -27,7 +27,9 @@ The schema contains no payment tables or provider integrations. Prices are infor
 
 Configure the Supabase Auth site URL and redirect allowlist for local and deployed HTTPS origins, including `/auth/callback`. Enable email verification and password recovery. Phone OTP is not assumed available without an SMS provider. Use private storage buckets for learner and course material; return files only after authorization and through short-lived signed URLs.
 
-The manual administrator-promotion SQL is `supabase/admin_setup.sql`. First create and verify the intended Auth account, then set exactly one exact email or existing user UUID in the script and execute it as a trusted Supabase operator. Admin is not a signup role. Never store an admin password in source control.
+The manual administrator-promotion SQL is `supabase/admin_setup.sql`. First create and verify the intended Auth account, then set exactly one exact email or existing user UUID in the script and execute it as a trusted Supabase operator. The script rejects unverified Auth identities and never creates an Auth user. Admin is not a signup role. Never store an admin password in source control. After promotion, sign in normally and open `/admin`; its Teacher Verification area lets the Admin set or clear the informational teacher-verification fee, review requests, and manage badge trials. No payment is collected on Lexify School; any fee arrangement is handled off-site.
+
+Signed-in accounts keep their Supabase session while navigating the site. The upper-right account control opens `/profile`, where users can update their name and private profile photo. Students can copy their shareable student ID there; parents can submit or retry a link request. A parent request remains pending until the student confirms it in the Student portal.
 
 ## Curriculum and account rules
 
