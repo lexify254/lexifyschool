@@ -1,4 +1,4 @@
-
+.
 # Lexify School
 
 Lexify School is a mobile-first online-learning platform for Kenyan students, parents and guardians, teachers, and guests. The application uses **Next.js App Router, React, TypeScript, Tailwind CSS, Supabase Auth, Postgres, Storage and Row Level Security**.
