@@ -34,6 +34,7 @@ Scope follows `lexifyschool.md` (Master Build Prompt, Version 3), which replaces
 ## Phase 2 — Curriculum schema, seed data, illustrations and Curriculum Manager
 
 - [ ] Store education systems, levels and statuses in database tables with `is_active`, `starts_on`, `ends_on`; admins can activate/deactivate and schedule levels without code changes.
+  - Progress: public/signup curriculum views now honor date windows, and an additive migration adds public RLS gating plus subject-assignment write guards. The migration still needs application and verification after the bound Supabase project is accessible; this outcome remains open.
 - [ ] Seed Junior School CBE Grades 7–9 as active; Senior School CBE Grade 10 active, Grade 11 starts January 2027, Grade 12 later; 8-4-4 Forms 3 and 4 active, Forms 1 and 2 inactive records; guests have no curriculum.
 - [ ] Store learning areas/subjects, grade relationships, pathways, tracks, KCSE groups, strands/sub-strands, combination rules, approved combinations, competencies/values, assessment scales and illustrations in editable tables; do not hard-code the curriculum in page components.
 - [ ] Implement reusable illustrated `SubjectCard` everywhere subjects appear. It displays illustration, clear title, grade/pathway tag, optional role line and selected/locked/disabled state with reason; accessible alt text/contrast and lightweight cached Lucide SVG defaults. Store `title`, `illustration_url`, `icon_name`, `accent_color`; allow admins to upload custom SVG/PNG illustrations.

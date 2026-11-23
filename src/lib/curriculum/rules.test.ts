@@ -82,6 +82,37 @@ describe("Junior School CBE rules", () => {
     expect(result.optionalTutoringSubjects.map((subject) => subject.id)).toEqual(["french"]);
     expect(result.subjectIds).toHaveLength(10); // tutoring is separate from the nine core areas
   });
+
+  it("treats the combined Kiswahili/KSL category as Kiswahili, not as KSL", () => {
+    const combinedLanguage = {
+      id: "jun-kiswahili",
+      code: "JUN_KISWAHILI",
+      name: "Kiswahili / Kenya Sign Language",
+      title: "Kiswahili / Kenya Sign Language",
+      curriculumArea: "language",
+      isAreaContainer: true,
+    };
+    const kslChild = {
+      id: "jun-ksl",
+      code: "JUN_KENYA_SIGN_LANGUAGE",
+      name: "Kenya Sign Language",
+      title: "Kenya Sign Language",
+      curriculumArea: "language",
+      parentAreaId: combinedLanguage.id,
+      isKenyaSignLanguage: true,
+      requiresDeafLearner: true,
+    };
+    const catalog = [...juniorCatalog.filter((subject) => subject.id !== "kiswahili"), combinedLanguage, kslChild];
+    const selected = ["english", combinedLanguage.id, "math", "science", "social", "cre", "agriculture", "pretech", "creative"];
+    const kiswahili = validateJuniorSelection({ grade: 8, catalog, selected, isDeafLearner: false });
+
+    expect(kiswahili.valid).toBe(true);
+    expect(kiswahili.coreSubjects).toHaveLength(9);
+
+    const signLanguage = validateJuniorSelection({ grade: 8, catalog, selected: [...selected, kslChild.id], isDeafLearner: false });
+    expect(signLanguage.valid).toBe(false);
+    expect(signLanguage.errors.map((error) => error.code)).toContain("ksl-requires-deaf-learner");
+  });
 });
 
 describe("Senior School CBE rules", () => {

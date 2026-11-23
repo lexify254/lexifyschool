@@ -235,7 +235,9 @@ function isReligiousEducation(subject: CurriculumSubject, custom?: readonly Subj
 }
 
 function isSignLanguage(subject: CurriculumSubject, custom?: readonly SubjectMatcher[]): boolean {
-  return subject.isKenyaSignLanguage === true || subject.requiresDeafLearner === true || matchesAny(subject, custom ?? []) ||
+  if (subject.isKenyaSignLanguage === true || subject.requiresDeafLearner === true) return true;
+  if (isKiswahili(subject)) return false;
+  return matchesAny(subject, custom ?? []) ||
     ["kenya-sign-language", "sign-language", "ksl"].some((alias) => fieldsOf(subject).some((field) => textMatches(field, alias)));
 }
 

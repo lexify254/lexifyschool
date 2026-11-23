@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { requireAdmin } from "@/lib/auth/guards";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { GradeEditor, LearningAreaEditor, SystemEditor } from "./editor-forms";
+import { currentCurriculumDate, curriculumAvailabilityLabel, isCurriculumAvailable } from "@/lib/curriculum/availability";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Curriculum manager" };
@@ -30,6 +31,7 @@ export default async function AdminCurriculumPage() {
       ])
     : [null, null, null];
   const hasConnection = !!supabase;
+  const today = currentCurriculumDate();
   const systems = (systemsResult?.data ?? []) as unknown as CurriculumRow[];
   const grades = (gradesResult?.data ?? []) as unknown as CurriculumRow[];
   const areas = (areasResult?.data ?? []) as unknown as CurriculumRow[];
@@ -51,9 +53,10 @@ export default async function AdminCurriculumPage() {
         const systemId = String(system.id);
         const systemGrades = grades.filter((grade) => text(grade, "system_id") === systemId);
         const systemAreas = areas.filter((area) => text(area, "system_id") === systemId);
+        const systemAvailable = isCurriculumAvailable(system, today);
         return (
           <section className="admin-record" key={systemId} aria-labelledby={`system-${systemId}`}>
-            <div className="admin-record__head"><div><h2 id={`system-${systemId}`}>{text(system, "name", "Unnamed education system")}</h2><p>{text(system, "code")} · {systemGrades.length} grade record{systemGrades.length === 1 ? "" : "s"} · {systemAreas.length} learning area{systemAreas.length === 1 ? "" : "s"}</p></div><span className="neutral-pill">{asActive(system) ? "Active" : "Inactive"}</span></div>
+            <div className="admin-record__head"><div><h2 id={`system-${systemId}`}>{text(system, "name", "Unnamed education system")}</h2><p>{text(system, "code")} · {systemGrades.length} grade record{systemGrades.length === 1 ? "" : "s"} · {systemAreas.length} learning area{systemAreas.length === 1 ? "" : "s"}</p></div><span className="neutral-pill">{curriculumAvailabilityLabel(system, today)}</span></div>
             <div className="admin-record__body">
               <h3>System availability</h3>
               <SystemEditor id={systemId} startsOn={dateValue(system, "starts_on")} endsOn={dateValue(system, "ends_on")} isActive={asActive(system)} />
@@ -63,7 +66,7 @@ export default async function AdminCurriculumPage() {
               {gradesError ? <div className="admin-empty">Grades could not be loaded. Grade editing is unavailable until the data query succeeds.</div> : systemGrades.length === 0 ? <div className="admin-empty">No grades are configured for this system.</div> : systemGrades.map((grade) => {
                 const gradeId = String(grade.id);
                 return <article className="admin-record" key={gradeId}>
-                  <div className="admin-record__head"><div><h3>{text(grade, "name", "Unnamed grade")}</h3><p>{text(grade, "code")}</p></div><span className="neutral-pill">{asActive(grade) ? "Active" : "Inactive"}</span></div>
+                  <div className="admin-record__head"><div><h3>{text(grade, "name", "Unnamed grade")}</h3><p>{text(grade, "code")}</p></div><span className="neutral-pill">{curriculumAvailabilityLabel(grade, today, systemAvailable)}</span></div>
                   <div className="admin-record__body"><GradeEditor id={gradeId} startsOn={dateValue(grade, "starts_on")} endsOn={dateValue(grade, "ends_on")} isActive={asActive(grade)} /></div>
                 </article>;
               })}
