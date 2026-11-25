@@ -165,11 +165,19 @@ export async function listAdminCourses() {
     ? await supabase.from("course_lessons").select("id,module_id,title,lesson_type,sort_order,estimated_minutes,is_free_preview,release_at,is_published").in("module_id", moduleIds).order("sort_order").limit(600)
     : { data: [], error: null };
   if (lessonsError) dbFailure("Lesson list", lessonsError);
+  const lessonIds = (lessons ?? []).map(lesson => lesson.id);
+  const { data: resources, error: resourcesError } = lessonIds.length
+    ? await supabase.from("lesson_resources").select("id,lesson_id,title,mime_type,is_downloadable").in("lesson_id", lessonIds).order("title").limit(1000)
+    : { data: [], error: null };
+  if (resourcesError) dbFailure("Lesson resource list", resourcesError);
   return courseRows.map((course) => ({
     ...course,
     modules: moduleRows.filter((module) => module.course_id === course.id).map((module) => ({
       ...module,
-      lessons: (lessons ?? []).filter((lesson) => lesson.module_id === module.id),
+      lessons: (lessons ?? []).filter((lesson) => lesson.module_id === module.id).map(lesson => ({
+        ...lesson,
+        resources: (resources ?? []).filter(resource => resource.lesson_id === lesson.id),
+      })),
     })),
   }));
 }

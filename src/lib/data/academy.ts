@@ -19,6 +19,7 @@ export type AcademyLessonDetail = {
   lesson: Row;
   modules: Row[];
   lessons: Row[];
+  resources: Row[];
 };
 
 function readFailed(context: string, error: { code?: string } | null) {
@@ -254,6 +255,15 @@ export async function getAvailablePublishedLesson(
     readFailed("academy published lesson", lessonError);
     if (lessonError) return { data: null, error: true };
     if (!lesson) return { data: null, error: false };
+    const { data: resources, error: resourcesError } = await supabase
+      .from("lesson_resources")
+      .select("id,title,mime_type")
+      .eq("lesson_id", lessonId)
+      .eq("is_downloadable", true)
+      .order("title", { ascending: true })
+      .limit(30);
+    readFailed("academy lesson resources", resourcesError);
+    if (resourcesError) return { data: null, error: true };
     const selectedModule = moduleRows.find(
       row => String(row.id) === String(lesson.module_id)
     );
@@ -270,6 +280,7 @@ export async function getAvailablePublishedLesson(
         lesson: lesson as Row,
         modules: moduleRows,
         lessons,
+        resources: (resources ?? []) as Row[],
       },
       error: false,
     };

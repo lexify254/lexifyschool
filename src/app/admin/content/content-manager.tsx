@@ -1,9 +1,10 @@
 "use client";
 import { useEffect, useId, useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { LessonResources, type AdminLessonResource } from "./lesson-resources";
 
 type LessonType = "video" | "text" | "document" | "practice_file" | "quiz" | "assignment";
-export type AdminLesson = { id: string; title: string; lesson_type: LessonType; sort_order: number; estimated_minutes: number | null; is_free_preview: boolean; is_published: boolean };
+export type AdminLesson = { id: string; title: string; lesson_type: LessonType; sort_order: number; estimated_minutes: number | null; is_free_preview: boolean; is_published: boolean; resources?: AdminLessonResource[] };
 export type AdminModule = { id: string; title: string; description: string | null; sort_order: number; lessons: AdminLesson[] };
 export type AdminCourse = { id: string; code: string; title: string; description: string | null; icon_name: string; accent_color: string; level: string | null; duration_minutes: number | null; status: "draft" | "published" | "archived"; published_at: string | null; modules: AdminModule[] };
 type FormRender = (state: { pending: boolean; message: string; ok: boolean }) => ReactNode;
@@ -60,6 +61,7 @@ function LessonCard({ lesson }: { lesson: AdminLesson }) {
   const initialContent = contentText || "{}";
   return <article className="admin-content-leaf">
     <div className="admin-record__head"><div><h4>{lesson.title}</h4><p>{lesson.lesson_type} · {lesson.is_published ? "Published" : "Draft"}{lesson.is_free_preview ? " · free preview" : ""}</p></div><div className="admin-course__actions"><button type="button" className="admin-submit admin-submit--quiet" onClick={() => setEditing((value) => !value)}>{editing ? "Close editor" : "Edit lesson"}</button><ActionButton url={`/api/admin/lessons/${lesson.id}`} method="DELETE" danger>Delete draft lesson</ActionButton></div></div>
+    <LessonResources lessonId={lesson.id} resources={lesson.resources ?? []} />
     {editing && (loadError ? <div className="admin-empty" role="status">{loadError} <button type="button" className="admin-submit admin-submit--quiet" onClick={() => setRetry((value) => value + 1)}>Retry</button></div> : !contentText ? <p className="admin-empty" role="status">Loading lesson content…</p> : <ApiForm url={`/api/admin/lessons/${lesson.id}`} method="PATCH" className="admin-form admin-form--content" prepare={(data) => ({ ...values(data), sort_order: Number(data.get("sort_order")), estimated_minutes: data.get("estimated_minutes") ? Number(data.get("estimated_minutes")) : null, is_free_preview: data.get("is_free_preview") === "on", is_published: data.get("is_published") === "on", content: JSON.parse(String(data.get("content") || "{}")) })}>
       {(state) => <><Field label="Lesson title" name="title" defaultValue={lesson.title} required maxLength={160} /><div className="admin-field"><label htmlFor={`type-${lesson.id}`}>Type</label><select id={`type-${lesson.id}`} name="lesson_type" defaultValue={lesson.lesson_type}>{["video", "text", "document", "practice_file", "quiz", "assignment"].map((type) => <option key={type}>{type}</option>)}</select></div><Field label="Position" name="sort_order" type="number" defaultValue={lesson.sort_order} min={0} max={100000} /><Field label="Minutes" name="estimated_minutes" type="number" defaultValue={lesson.estimated_minutes ?? ""} min={1} max={10080} /><TextArea label="Content JSON" name="content" defaultValue={initialContent} rows={5} /><label className="admin-check"><input type="checkbox" name="is_free_preview" defaultChecked={lesson.is_free_preview} /> Free preview</label><label className="admin-check"><input type="checkbox" name="is_published" defaultChecked={lesson.is_published} /> Published</label><button className="admin-submit" disabled={state.pending}>{state.pending ? "Saving…" : "Save lesson"}</button><Feedback state={state} /></>}
     </ApiForm>)}

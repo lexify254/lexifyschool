@@ -5,6 +5,7 @@ import {
   isExplicitlyPrivateBucket,
   isSafePrivateObjectPath,
   UPLOAD_BUCKET_ROLES,
+  validateUploadHeader,
   validateUploadFile,
 } from "./file-upload";
 
@@ -25,6 +26,7 @@ describe("secure upload policy", () => {
     expect(UPLOAD_BUCKET_ROLES).toEqual({
       materials: "teacher",
       homework: "student",
+      "course-content": "admin",
     });
     expect(isExplicitlyPrivateBucket({ public: false })).toBe(true);
     expect(isExplicitlyPrivateBucket({ public: true })).toBe(false);
@@ -36,6 +38,7 @@ describe("secure upload policy", () => {
     const path = createPrivateObjectPath(userId, "materials", "pdf", objectId);
     expect(path).toBe(`${userId}/${objectId}.pdf`);
     expect(isSafePrivateObjectPath(path!, userId)).toBe(true);
+    expect(isSafePrivateObjectPath(`${userId}/${objectId}.html`, userId)).toBe(false);
     expect(
       isSafePrivateObjectPath(`${userId}/../${objectId}.pdf`, userId)
     ).toBe(false);
@@ -61,6 +64,26 @@ describe("secure upload policy", () => {
     expect(
       validateUploadFile("lesson.png", "application/pdf", pdf, pdf.length, 1024)
     ).toBeNull();
+    const officeDocument = new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0x14, 0x00]);
+    expect(validateUploadHeader(
+      "notes.docx",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      officeDocument,
+      100,
+      1024
+    )).toBe("docx");
+    expect(validateUploadFile(
+      "notes.docx",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      officeDocument,
+      officeDocument.length,
+      1024
+    )).toBe("docx");
+    expect(validateUploadFile("notes.docx", "application/pdf", officeDocument, officeDocument.length, 1024)).toBeNull();
+    const legacyOffice = new Uint8Array([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]);
+    expect(validateUploadFile("notes.doc", "application/msword", legacyOffice, legacyOffice.length, 1024)).toBe("doc");
+    const csv = new TextEncoder().encode("subject,score\nmath,90");
+    expect(validateUploadFile("scores.csv", "text/csv", csv, csv.length, 1024)).toBe("csv");
     expect(
       validateUploadFile(
         "../../lesson.pdf",

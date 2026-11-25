@@ -12,6 +12,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 const MULTIPART_OVERHEAD_BYTES = 32 * 1024;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function json(data: Record<string, unknown>, status: number): Response {
   return Response.json(data, {
@@ -65,16 +66,6 @@ export async function POST(request: Request): Promise<Response> {
   } catch {
     return json({ error: "Upload must be valid multipart form data." }, 400);
   }
-  const entries = Array.from(form.entries());
-  if (
-    entries.length !== 2 ||
-    entries.some(([key]) => key !== "file" && key !== "bucket")
-  ) {
-    return json(
-      { error: "Upload must include exactly one file and one bucket." },
-      400
-    );
-  }
   const bucketValue = form.get("bucket");
   const fileValue = form.get("file");
   if (
@@ -85,8 +76,39 @@ export async function POST(request: Request): Promise<Response> {
     return json({ error: "Unsupported upload." }, 400);
   }
   const bucket = bucketValue as keyof typeof UPLOAD_BUCKET_ROLES;
+  const requiredFields = bucket === "course-content"
+    ? new Set(["bucket", "file", "lessonId", "title"])
+    : new Set(["bucket", "file"]);
+  const entries = Array.from(form.entries());
+  if (entries.length !== requiredFields.size || entries.some(([key]) => !requiredFields.has(key))) {
+    return json({ error: "Upload fields are missing or unsupported." }, 400);
+  }
   if (profile.role !== UPLOAD_BUCKET_ROLES[bucket])
     return json({ error: "Upload is not permitted for this role." }, 403);
+  let lessonId: string | null = null;
+  let title: string | null = null;
+  if (bucket === "course-content") {
+    const requestedLessonId = form.get("lessonId");
+    const requestedTitle = form.get("title");
+    if (
+      typeof requestedLessonId !== "string" ||
+      !UUID.test(requestedLessonId) ||
+      typeof requestedTitle !== "string" ||
+      !requestedTitle.trim() ||
+      requestedTitle.trim().length > 160
+    ) {
+      return json({ error: "Choose a lesson and provide a file title (up to 160 characters)." }, 400);
+    }
+    const { data: lesson, error: lessonError } = await supabase
+      .from("course_lessons")
+      .select("id")
+      .eq("id", requestedLessonId)
+      .maybeSingle();
+    if (lessonError) return json({ error: "Lesson authorization is unavailable." }, 503);
+    if (!lesson) return json({ error: "The selected lesson was not found." }, 404);
+    lessonId = requestedLessonId;
+    title = requestedTitle.trim();
+  }
   if (
     fileValue.size <= 0 ||
     fileValue.size > maxBytes ||
@@ -133,6 +155,28 @@ export async function POST(request: Request): Promise<Response> {
     });
   if (uploadError)
     return json({ error: "File could not be stored securely." }, 503);
+
+  if (bucket === "course-content" && lessonId && title) {
+    const { data: resource, error: resourceError } = await supabase
+      .from("lesson_resources")
+      .insert({
+        lesson_id: lessonId,
+        title,
+        file_path: path,
+        mime_type: fileValue.type,
+        is_downloadable: true,
+      })
+      .select("id,title")
+      .single();
+    if (resourceError || !resource) {
+      await supabase.storage.from(bucket).remove([path]);
+      return json({ error: "The file was stored but could not be attached to the lesson. Try again." }, 503);
+    }
+    return json(
+      { bucket, path, mimeType: fileValue.type, size: fileValue.size, resource },
+      201
+    );
+  }
 
   return json(
     { bucket, path, mimeType: fileValue.type, size: fileValue.size },

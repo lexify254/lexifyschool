@@ -75,17 +75,6 @@ export function SiteHeader() {
   return (
     <header className="site-header">
       <div className="site-header__inner">
-        {account ? (
-          <Link
-            className="site-account site-account--workspace"
-            href={account.workspaceHref}
-            aria-label={`Open ${account.name}'s workspace`}
-            title="My workspace"
-            onClick={() => setOpen(false)}
-          >
-            {account.avatarUrl ? <img src={account.avatarUrl} alt="" width={40} height={40} /> : <span className="site-account__fallback" aria-hidden="true"><UserRound size={20} /></span>}
-          </Link>
-        ) : null}
         <Logo light />
         <nav className={`site-nav${open ? " site-nav--open" : ""}`} aria-label="Main navigation">
           {links.map((link) => {
@@ -95,9 +84,20 @@ export function SiteHeader() {
                 {link.label}
               </Link>
             );
-          })}
+        })}
         </nav>
         <div className="site-header__actions">
+          {account ? (
+            <Link
+              className="site-account site-account--workspace"
+              href={account.workspaceHref}
+              aria-label={`Open ${account.name}'s workspace`}
+              title="My workspace"
+              onClick={() => setOpen(false)}
+            >
+              {account.avatarUrl ? <img src={account.avatarUrl} alt="" width={40} height={40} /> : <span className="site-account__fallback" aria-hidden="true"><UserRound size={20} /></span>}
+            </Link>
+          ) : null}
           {!account ? (
             <>
               <Link className="button button--outline" href={`/login?next=${encodeURIComponent(pathname || "/")}`}>Login</Link>

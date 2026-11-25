@@ -9,6 +9,7 @@ const OBJECT_ID_PATTERN =
 export const UPLOAD_BUCKET_ROLES = {
   materials: "teacher",
   homework: "student",
+  "course-content": "admin",
 } as const;
 
 const MIME_EXTENSIONS: Record<string, readonly string[]> = {
@@ -16,6 +17,14 @@ const MIME_EXTENSIONS: Record<string, readonly string[]> = {
   "image/jpeg": ["jpg", "jpeg"],
   "image/png": ["png"],
   "image/webp": ["webp"],
+  "application/msword": ["doc"],
+  "application/vnd.ms-excel": ["xls"],
+  "application/vnd.ms-powerpoint": ["ppt"],
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ["docx"],
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ["xlsx"],
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": ["pptx"],
+  "text/plain": ["txt"],
+  "text/csv": ["csv"],
 };
 
 export function getMaxUploadBytes(value: string | undefined): number | null {
@@ -54,6 +63,24 @@ export function validateUploadFile(
     bytes.byteLength !== size
   )
     return null;
+  return validateUploadHeader(filename, declaredType, bytes, size, maxBytes);
+}
+
+export function validateUploadHeader(
+  filename: string,
+  declaredType: string,
+  header: Uint8Array,
+  size: number,
+  maxBytes: number
+): string | null {
+  if (
+    !Number.isSafeInteger(size) ||
+    size <= 0 ||
+    size > maxBytes ||
+    header.byteLength === 0 ||
+    header.byteLength > size
+  )
+    return null;
   if (
     !/^[A-Za-z0-9][A-Za-z0-9 _.-]{0,127}$/.test(filename) ||
     filename.includes("..")
@@ -64,17 +91,25 @@ export function validateUploadFile(
   const extension = filename.split(".").pop()?.toLowerCase();
   if (!extensions || !extension || !extensions.includes(extension)) return null;
 
+  const officeOle = matches(header, [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]);
+  const officeZip = matches(header, [0x50, 0x4b, 0x03, 0x04]);
+  const validText = declaredType === "text/plain" || declaredType === "text/csv"
+    ? !header.includes(0)
+    : false;
   const headerMatches =
-    (declaredType === "application/pdf" && ascii(bytes, 0, 5) === "%PDF-") ||
+    (declaredType === "application/pdf" && ascii(header, 0, 5) === "%PDF-") ||
     (declaredType === "image/jpeg" &&
-      bytes[0] === 0xff &&
-      bytes[1] === 0xd8 &&
-      bytes[2] === 0xff) ||
+      header[0] === 0xff &&
+      header[1] === 0xd8 &&
+      header[2] === 0xff) ||
     (declaredType === "image/png" &&
-      matches(bytes, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) ||
+      matches(header, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) ||
     (declaredType === "image/webp" &&
-      ascii(bytes, 0, 4) === "RIFF" &&
-      ascii(bytes, 8, 4) === "WEBP");
+      ascii(header, 0, 4) === "RIFF" &&
+      ascii(header, 8, 4) === "WEBP") ||
+    (["application/msword", "application/vnd.ms-excel", "application/vnd.ms-powerpoint"].includes(declaredType) && officeOle) ||
+    (["application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.openxmlformats-officedocument.presentationml.presentation"].includes(declaredType) && officeZip) ||
+    ((declaredType === "text/plain" || declaredType === "text/csv") && validText);
   return headerMatches ? extension : null;
 }
 
@@ -111,7 +146,7 @@ export function isSafePrivateObjectPath(path: string, userId: string): boolean {
   const objectName = path.slice(userId.length + 1);
   return (
     path.startsWith(userId + "/") &&
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(pdf|jpg|jpeg|png|webp)$/i.test(
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(pdf|jpg|jpeg|png|webp|doc|docx|xls|xlsx|ppt|pptx|txt|csv)$/i.test(
       objectName
     )
   );

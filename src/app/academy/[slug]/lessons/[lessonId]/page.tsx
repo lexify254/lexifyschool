@@ -115,7 +115,7 @@ export default async function AcademyLessonPage({ params }: Props) {
     );
   }
   if (!result.data) notFound();
-  const { course, module, lesson, modules } = result.data;
+  const { course, module, lesson, modules, resources } = result.data;
   const isFreePreview = lesson.is_free_preview === true;
   const orderedLessons = sortPreviewLessons(result.data.lessons, modules);
   const currentIndex = orderedLessons.findIndex(
@@ -201,6 +201,27 @@ export default async function AcademyLessonPage({ params }: Props) {
             </div>
           )}
         </article>
+
+        {resources.length ? (
+          <article className="section-block">
+            <div className="section-head">
+              <div>
+                <span className="section-kicker">Course materials</span>
+                <h2 className="section-title">Files for this lesson</h2>
+              </div>
+            </div>
+            <ul className="module-list">
+              {resources.map(resource => (
+                <li className="module-item" key={String(resource.id)}>
+                  <a href={`/api/lesson-resources/${encodeURIComponent(String(resource.id))}/download`}>
+                    Download {String(resource.title)}
+                  </a>
+                  {typeof resource.mime_type === "string" ? <small> · {resource.mime_type}</small> : null}
+                </li>
+              ))}
+            </ul>
+          </article>
+        ) : null}
 
         <nav
           aria-label="Free preview lesson navigation"

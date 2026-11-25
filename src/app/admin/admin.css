@@ -97,3 +97,15 @@
 .admin-course-create { margin-bottom: 30px; }
 @media (max-width: 760px) { .admin-form--content { grid-template-columns: repeat(2,minmax(0,1fr)); } .admin-table th, .admin-table td { padding: 10px; } .admin-course__body { padding: 0 14px 16px; } }
 @media (max-width: 460px) { .admin-form--content { grid-template-columns: 1fr; } .admin-course__summary { padding: 15px; } .admin-content-module { padding: 12px; } }
+.admin-lesson-resources { margin: 14px 0; padding: 14px; border: 1px solid #d6e2f0; border-radius: 12px; background: #f6faff; }
+.admin-lesson-resources h4 { margin: 0 0 10px; color: #102b61; font-size: 13px; }
+.admin-lesson-resources__list { display: grid; gap: 7px; margin: 0 0 12px; padding: 0; list-style: none; }
+.admin-lesson-resources__list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 11px; border: 1px solid #e1e9f3; border-radius: 8px; background: #fff; }
+.admin-lesson-resources__list a { color: #1e3a8a; font-size: 12px; font-weight: 750; }
+.admin-lesson-resources__list small, .admin-lesson-resources__empty, .admin-lesson-resources__note { color: #71839a; font-size: 11px; }
+.admin-lesson-resources__empty { margin: 0 0 10px; }
+.admin-lesson-resources__form { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.5fr) auto; gap: 10px; align-items: end; }
+.admin-lesson-resources__form .admin-form-message { grid-column: 1 / -1; }
+.admin-lesson-resources__form input[type="file"] { min-height: 40px; font-size: 11px; }
+.admin-lesson-resources__note { margin: 9px 0 0; }
+@media (max-width: 760px) { .admin-lesson-resources__form { grid-template-columns: 1fr; } }
