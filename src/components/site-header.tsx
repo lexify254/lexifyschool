@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Menu, UserRound, X } from "lucide-react";
 import { Logo } from "@/components/logo";
+import { roleHome, type AppRole } from "@/lib/auth/roles";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 const links = [
@@ -16,7 +17,7 @@ const links = [
   { href: "/contact", label: "Contact" },
 ];
 
-type HeaderAccount = { name: string; avatarUrl: string | null };
+type HeaderAccount = { name: string; avatarUrl: string | null; workspaceHref: string };
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -36,7 +37,7 @@ export function SiteHeader() {
       }
       const { data: profile } = await client!
         .from("profiles")
-        .select("full_name,avatar_url,is_suspended")
+        .select("full_name,avatar_url,is_suspended,role")
         .eq("id", auth.user.id)
         .maybeSingle();
       if (!active) return;
@@ -50,7 +51,15 @@ export function SiteHeader() {
         if (!active) return;
         avatarUrl = data?.signedUrl ?? null;
       }
-      setAccount({ name: profile.full_name || auth.user.email || "Account", avatarUrl });
+      const role = String(profile.role ?? "");
+      const workspaceHref = Object.hasOwn(roleHome, role)
+        ? roleHome[role as AppRole]
+        : "/profile";
+      setAccount({
+        name: profile.full_name || auth.user.email || "Account",
+        avatarUrl,
+        workspaceHref,
+      });
     }
     const refresh = () => { window.setTimeout(() => { void loadAccount(); }, 0); };
     void loadAccount();
@@ -66,6 +75,17 @@ export function SiteHeader() {
   return (
     <header className="site-header">
       <div className="site-header__inner">
+        {account ? (
+          <Link
+            className="site-account site-account--workspace"
+            href={account.workspaceHref}
+            aria-label={`Open ${account.name}'s workspace`}
+            title="My workspace"
+            onClick={() => setOpen(false)}
+          >
+            {account.avatarUrl ? <img src={account.avatarUrl} alt="" width={40} height={40} /> : <span className="site-account__fallback" aria-hidden="true"><UserRound size={20} /></span>}
+          </Link>
+        ) : null}
         <Logo light />
         <nav className={`site-nav${open ? " site-nav--open" : ""}`} aria-label="Main navigation">
           {links.map((link) => {
@@ -78,17 +98,12 @@ export function SiteHeader() {
           })}
         </nav>
         <div className="site-header__actions">
-          {account ? (
-            <Link className="site-account" href="/profile" aria-label={`Open profile for ${account.name}`} onClick={() => setOpen(false)}>
-              {account.avatarUrl ? <img src={account.avatarUrl} alt="" width={40} height={40} /> : <span className="site-account__fallback" aria-hidden="true"><UserRound size={20} /></span>}
-              <span className="site-account__name">{account.name}</span>
-            </Link>
-          ) : (
+          {!account ? (
             <>
               <Link className="button button--outline" href={`/login?next=${encodeURIComponent(pathname || "/")}`}>Login</Link>
               <Link className="button button--gold" href="/signup">Get Started <span aria-hidden="true">→</span></Link>
             </>
-          )}
+          ) : null}
           <button className="mobile-menu-toggle" type="button" aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} onClick={() => setOpen((value) => !value)}>
             {open ? <X size={21} /> : <Menu size={21} />}
           </button>

@@ -92,6 +92,8 @@ img {
   width: 49px;
   height: 49px;
   object-fit: contain;
+  display: block;
+  border-radius: 50%;
 }
 .brand__wordmark {
   display: flex;
@@ -146,6 +148,17 @@ img {
   color: white;
   font-size: 13px;
   font-weight: 750;
+}
+.site-account--workspace {
+  width: 44px;
+  max-width: 44px;
+  flex: 0 0 44px;
+  justify-content: center;
+  border-radius: 50%;
+}
+.site-account--workspace:focus-visible {
+  outline: 3px solid var(--gold-bright);
+  outline-offset: 3px;
 }
 .site-account img,
 .site-account__fallback {
