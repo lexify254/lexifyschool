@@ -1,4 +1,5 @@
-export const MAX_CONFIGURED_UPLOAD_MB = 50;
+export const MAX_CONFIGURED_UPLOAD_MB = 100;
+export const DEFAULT_UPLOAD_MB = 100;
 const BYTES_PER_MB = 1024 * 1024;
 const USER_ID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -17,13 +18,9 @@ const MIME_EXTENSIONS: Record<string, readonly string[]> = {
   "image/webp": ["webp"],
 };
 
-export type MalwareScannerConfig = {
-  url: string;
-  apiKey: string;
-};
-
 export function getMaxUploadBytes(value: string | undefined): number | null {
-  if (!value || !/^\d+$/.test(value)) return null;
+  if (value === undefined) return DEFAULT_UPLOAD_MB * BYTES_PER_MB;
+  if (!/^\d+$/.test(value)) return null;
   const megabytes = Number(value);
   if (
     !Number.isSafeInteger(megabytes) ||
@@ -32,31 +29,6 @@ export function getMaxUploadBytes(value: string | undefined): number | null {
   )
     return null;
   return megabytes * BYTES_PER_MB;
-}
-
-export function getMalwareScannerConfig(
-  env: Readonly<Record<string, string | undefined>> = process.env
-): MalwareScannerConfig | null {
-  if (
-    env.MALWARE_SCAN_PROVIDER !== "http" ||
-    !env.MALWARE_SCAN_API_URL ||
-    !env.MALWARE_SCAN_API_KEY
-  )
-    return null;
-  try {
-    const url = new URL(env.MALWARE_SCAN_API_URL);
-    if (
-      url.protocol !== "https:" ||
-      url.username ||
-      url.password ||
-      url.search ||
-      url.hash
-    )
-      return null;
-    return { url: url.toString(), apiKey: env.MALWARE_SCAN_API_KEY };
-  } catch {
-    return null;
-  }
 }
 
 export function isExplicitlyPrivateBucket(bucket: unknown): boolean {
@@ -143,39 +115,6 @@ export function isSafePrivateObjectPath(path: string, userId: string): boolean {
       objectName
     )
   );
-}
-
-export async function scanWithConfiguredScanner(
-  bytes: Uint8Array,
-  mimeType: string,
-  scanner: MalwareScannerConfig
-): Promise<"clean" | "infected" | "unavailable"> {
-  try {
-    const payload = new ArrayBuffer(bytes.byteLength);
-    new Uint8Array(payload).set(bytes);
-    const response = await fetch(scanner.url, {
-      method: "POST",
-      headers: {
-        "content-type": "application/octet-stream",
-        "x-api-key": scanner.apiKey,
-        "cache-control": "no-store",
-        "x-file-content-type": mimeType,
-      },
-      body: new Blob([payload], { type: "application/octet-stream" }),
-      signal: AbortSignal.timeout(10_000),
-      cache: "no-store",
-    });
-    if (!response.ok) return "unavailable";
-    const result: unknown = await response.json();
-    if (typeof result !== "object" || result === null || !("status" in result))
-      return "unavailable";
-    const status = (result as { status?: unknown }).status;
-    if (status === "clean") return "clean";
-    if (status === "infected") return "infected";
-    return "unavailable";
-  } catch {
-    return "unavailable";
-  }
 }
 
 function ascii(bytes: Uint8Array, start: number, length: number): string {

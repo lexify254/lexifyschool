@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   createPrivateObjectPath,
-  getMalwareScannerConfig,
   getMaxUploadBytes,
   isExplicitlyPrivateBucket,
   isSafePrivateObjectPath,
@@ -13,32 +12,13 @@ const userId = "6ba7b810-9dad-41d1-80b4-00c04fd430c8";
 const objectId = "6ba7b811-9dad-41d1-80b4-00c04fd430c8";
 
 describe("secure upload policy", () => {
-  it("requires an explicit, bounded upload-size configuration", () => {
-    expect(getMaxUploadBytes(undefined)).toBeNull();
+  it("defaults to 100 MiB and rejects invalid or over-cap overrides", () => {
+    expect(getMaxUploadBytes(undefined)).toBe(100 * 1024 * 1024);
     expect(getMaxUploadBytes("0")).toBeNull();
-    expect(getMaxUploadBytes("51")).toBeNull();
+    expect(getMaxUploadBytes("101")).toBeNull();
     expect(getMaxUploadBytes("invalid")).toBeNull();
     expect(getMaxUploadBytes("12")).toBe(12 * 1024 * 1024);
-  });
-
-  it("fails closed unless an HTTPS malware scanner is configured", () => {
-    expect(
-      getMalwareScannerConfig({ MALWARE_SCAN_PROVIDER: "none" })
-    ).toBeNull();
-    expect(
-      getMalwareScannerConfig({
-        MALWARE_SCAN_PROVIDER: "http",
-        MALWARE_SCAN_API_URL: "http://scanner.example/scan",
-        MALWARE_SCAN_API_KEY: "test-key",
-      })
-    ).toBeNull();
-    expect(
-      getMalwareScannerConfig({
-        MALWARE_SCAN_PROVIDER: "http",
-        MALWARE_SCAN_API_URL: "https://scanner.example/scan",
-        MALWARE_SCAN_API_KEY: "test-key",
-      })
-    ).toEqual({ url: "https://scanner.example/scan", apiKey: "test-key" });
+    expect(getMaxUploadBytes("100")).toBe(100 * 1024 * 1024);
   });
 
   it("allows only the explicitly assigned private-storage roles", () => {

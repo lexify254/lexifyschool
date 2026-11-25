@@ -2,10 +2,8 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { isAccountSuspended } from "@/lib/auth/suspension";
 import {
   createPrivateObjectPath,
-  getMalwareScannerConfig,
   getMaxUploadBytes,
   isExplicitlyPrivateBucket,
-  scanWithConfiguredScanner,
   UPLOAD_BUCKET_ROLES,
   validateUploadFile,
 } from "@/lib/security/file-upload";
@@ -43,10 +41,11 @@ export async function POST(request: Request): Promise<Response> {
     return json({ error: "Account access is suspended." }, 403);
 
   const maxBytes = getMaxUploadBytes(process.env.MAX_UPLOAD_MB);
-  const scanner = getMalwareScannerConfig();
-  if (maxBytes === null || scanner === null) {
-    return json({ error: "Secure uploads are not configured." }, 503);
-  }
+  if (maxBytes === null)
+    return json(
+      { error: "Upload size configuration must be a whole number from 1 to 100 MiB." },
+      503
+    );
 
   const rawLength = request.headers.get("content-length");
   if (!rawLength || !/^\d+$/.test(rawLength))
@@ -117,16 +116,6 @@ export async function POST(request: Request): Promise<Response> {
   if (bucketError || !isExplicitlyPrivateBucket(storageBucket)) {
     return json({ error: "Private upload storage is unavailable." }, 503);
   }
-
-  const scanResult = await scanWithConfiguredScanner(
-    bytes,
-    fileValue.type,
-    scanner
-  );
-  if (scanResult === "infected")
-    return json({ error: "File did not pass security scanning." }, 422);
-  if (scanResult !== "clean")
-    return json({ error: "Security scanning is unavailable." }, 503);
 
   const path = createPrivateObjectPath(auth.user.id, bucket, extension);
   if (!path)

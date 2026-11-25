@@ -47,18 +47,18 @@ Active teachers can manage their own records at `/teacher/receipts`; administrat
 
 ## Environment and integrations
 
-Copy `.env.example` to `.env.local` and configure only values available in the deployment. Browser-safe Supabase URL and publishable-key values may be included in the client bundle. `SUPABASE_SERVICE_ROLE_KEY`, mail and malware-scanning credentials must remain server-only. No payment-gateway credentials, checkout URLs, callbacks or webhooks are part of this site.
+Copy `.env.example` to `.env.local` and configure only values available in the deployment. Browser-safe Supabase URL and publishable-key values may be included in the client bundle. `SUPABASE_SERVICE_ROLE_KEY` and mail credentials must remain server-only. No payment-gateway credentials, checkout URLs, callbacks or webhooks are part of this site.
 
-Email, SMS, and malware scanning are optional configured services. If scanning is unavailable, dangerous file types remain blocked and unscanned executable/macro files must not be distributed. If a notification integration is missing, the application must report that honestly rather than claiming delivery.
+Uploads are limited to 100 MiB per file by default (configurable from 1 to 100 MiB) and stored in private buckets after MIME, extension, filename and file-signature checks. Malware scanning is not configured or performed; uploaded files are not guaranteed malware-free. Do not distribute untrusted files as safe. If a notification integration is missing, the application must report that honestly rather than claiming delivery.
 
 ## Deployment
 
 ### Vercel
 
 1. Import the repository into Vercel and select the Next.js framework.
-2. Configure `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_SITE_URL=https://lexifyschool.vercel.app`, and the server-side `WHATSAPP_ADMIN_NUMBER`. Keep service-role, mail and malware-scanning variables server-only.
+2. Configure `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_SITE_URL=https://lexifyschool.vercel.app`, and the server-side `WHATSAPP_ADMIN_NUMBER`. Set `MAX_UPLOAD_MB` to a whole number from 1 to 100 if overriding the 100 MiB default.
 3. Set Supabase Auth's HTTPS site URL and redirect allowlist for the deployment domain.
-4. Review privacy, terms, child-safety, contact details, curriculum data and upload scanning before accepting real users.
+4. Review privacy, terms, child-safety, contact details and curriculum data before accepting real users; remember that uploads are not malware-scanned.
 
 The homepage hero and school seal are committed under `public/`, so they are served by Vercel without Manus Storage. The hero photo is by [Melike B on Pexels](https://www.pexels.com/photo/book-with-laptop-on-bed-7420353/) and is available under the [Pexels License](https://www.pexels.com/license/).
 
@@ -72,4 +72,4 @@ The homepage hero and school seal are committed under `public/`, so they are ser
 - Curriculum/system status records are data-driven; recheck scheduled activation dates with the school before launch.
 - Student community access must respect confirmed parent links, consent and moderation controls. Do not enable social features until these controls are operational.
 - Terms, privacy and child-safety pages are product drafts, not legal advice. Obtain qualified Kenyan legal review and complete actual data-retention, complaints, contact and rights-request procedures before launch.
-- No verified platform seller contact number, live admin identity, approved official combinations, production email/SMS, or malware-scanner credentials are supplied by default; the owner must configure the relevant values before relying on them.
+- No verified platform seller contact number, live admin identity, approved official combinations, production email/SMS are supplied by default; the owner must configure the relevant values before relying on them. Uploaded files are not malware-scanned.
